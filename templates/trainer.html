@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Trainer Management</h1>
+
+<!-- Challenge Modal -->
+<div class="modal fade" id="challengeWindow" tabindex="-1" aria-labelledby="challengeWindowLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Herausforderung beginnen</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label id="challengeWindowInputLabel" for="input-datalist">Spieler fordert wen heraus?</label>
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Wähle einen Spieler..." 
+                           list="list-timezone" 
+                           id="input-datalist"
+                           autocomplete="off"
+                           required>
+                    <datalist id="list-timezone">
+                        <!-- Options will be populated dynamically -->
+                    </datalist>
+                    <div class="invalid-feedback">
+                        Bitte wähle einen gültigen Spieler aus der Liste.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="button" class="btn btn-primary">Starten</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="mobileView">
+    <div class="table-responsive">
+        <table class="table table-striped table-hover" id="playerTableMobile">
+            <thead class="table-dark">
+                <tr>
+                    <th>Ranking</th>
+                    <th>Spieler</th>
+                    <th>Siege</th>
+                    <th>Verluste</th>
+                    <th>Gewinn %</th>
+                    <th>Sätze gewonnen</th>
+                    <th>Sätze verloren</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in players %}
+                <tr class="player-row" data-player-id="{{ player.ranking }}" data-player-name="{{ player.name }}">
+                    <td><strong>{{ player.ranking }}</strong></td>
+                    <td>{{ player.name }}</td>
+                    <td>{{ player.wins }}</td>
+                    <td>{{ player.losses }}</td>
+                    <td>{% if player.wins %}
+                            {{ "%.1f"|format((player.wins / (player.wins + player.losses) * 100)) }}%
+                        {% else %}
+                            N/V
+                        {% endif %}
+                    </td>
+                    <td>{{ player.setsWon }}</td>
+                    <td>{{ player.setsLost }}</td>
+                </tr>
+                <!-- Expanded row for buttons, hidden by default -->
+                <tr class="expand-row" id="expand-mobile-{{ player.ranking }}" style="display:none;">
+                    <td colspan="7">
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button type="button" class="btn btn-primary challenge-btn" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#challengeWindow"
+                                    data-player-id="{{ player.id }}"
+                                    data-player-name="{{ player.name }}">
+                                Herausforderung
+                            </button>
+                            <button class="btn btn-warning">Timeout</button>
+                            <button class="btn btn-secondary edit-btn" data-player-name="{{ player.name }}">Edit</button>
+                            <button class="btn btn-danger">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="Divider">Aktive Herausforderungen</div>
+    <div class="activeGames">
+        <p>Hier werden die aktiven Herausforderungen angezeigt.</p>
+        {% if activeGames %}
+            <p>Es gibt aktive Herausforderungen</p>
+        {% else %}
+            <p>Aktuell gibt es keine aktiven Herausforderungen.</p>
+        {% endif %}
+    </div>
+    <div class="Divider">Spieler hinzufügen</div>
+    <div class="PlayerForm">
+        <form method="post" action="/player_add">
+            <div class="mb-3">
+                <label for="name" class="form-label">Spieler Name</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="name" name="name" required>
+                    <button type="submit" class="btn btn-dark">Spieler hinzufügen</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="normalView">
+    <div class="gridContainer">
+        <div class="tableColumn">
+            <p>normalView</p>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="playerTableNormal">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Ranking</th>
+                            <th>Spieler</th>
+                            <th>Siege</th>
+                            <th>Verluste</th>
+                            <th>Gewinn %</th>
+                            <th>Sätze gewonnen</th>
+                            <th>Sätze verloren</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in players %}
+                        <tr class="player-row" data-player-id="{{ player.ranking }}" data-player-name="{{ player.name }}">
+                            <td><strong>{{ player.ranking }}</strong></td>
+                            <td>{{ player.name }}</td>
+                            <td>{{ player.wins }}</td>
+                            <td>{{ player.losses }}</td>
+                            <td>{% if player.wins %}
+                                    {{ "%.1f"|format((player.wins / (player.wins + player.losses) * 100)) }}%
+                                {% else %}
+                                    N/V
+                                {% endif %}
+                            </td>
+                            <td>{{ player.setsWon }}</td>
+                            <td>{{ player.setsLost }}</td>
+                        </tr>
+                        <!-- Expanded row for buttons, hidden by default -->
+                        <tr class="expand-row" id="expand-normal-{{ player.ranking }}" style="display:none;">
+                            <td colspan="7">
+                                <div class="d-flex gap-2 justify-content-center">
+                                    <button type="button" class="btn btn-primary challenge-btn" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#challengeWindow"
+                                            data-player-id="{{ player.id }}"
+                                            data-player-name="{{ player.name }}">
+                                        Herausforderung
+                                    </button>
+                                    <button class="btn btn-warning">Timeout</button>
+                                    <button class="btn btn-secondary edit-btn" data-player-name="{{ player.name }}">Edit</button>
+                                    <button class="btn btn-danger">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="otherColumn">
+            <div class="Divider">Aktive Herausforderungen</div>
+            <div class="activeGames">
+                <p>Hier werden die aktiven Herausforderungen angezeigt.</p>
+                {% if activeGames %}
+                    <p>Es gibt aktive Herausforderungen</p>
+                {% else %}
+                    <p>Aktuell gibt es keine aktiven Herausforderungen.</p>
+                {% endif %}
+            </div>
+            <div class="Divider">Spieler hinzufügen</div>
+            <div class="PlayerForm">
+                <form method="post" action="/player_add">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Spieler Name</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="name" name="name" required>
+                            <button type="submit" class="btn btn-dark">Spieler hinzufügen</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
