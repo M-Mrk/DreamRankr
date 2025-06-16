@@ -14,19 +14,23 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label id="challengeWindowInputLabel" for="input-datalist">Spieler fordert wen heraus?</label>
-                    <input type="text" 
-                           class="form-control" 
-                           placeholder="Wähle einen Spieler..." 
-                           list="list-timezone" 
-                           id="input-datalist"
-                           autocomplete="off"
-                           required>
-                    <datalist id="list-timezone">
-                        <!-- Options will be populated dynamically -->
-                    </datalist>
-                    <div class="invalid-feedback">
-                        Bitte wähle einen gültigen Spieler aus der Liste.
-                    </div>
+                    <form method="post" action="/trainer/start_match">
+                        <input type="text" 
+                            class="form-control" 
+                            placeholder="Wähle einen Spieler..." 
+                            list="list-timezone" 
+                            id="input-datalist"
+                            autocomplete="off"
+                            required>
+                        <input type="hidden" id="challenger-id" name="challenger_id">
+                        <input type="hidden" id="defender-id" name="defender_id">
+                        <datalist id="list-timezone">
+                            <!-- Options will be populated dynamically -->
+                        </datalist>
+                        <div class="invalid-feedback">
+                            Bitte wähle einen gültigen Spieler aus der Liste.
+                        </div>
+                    </form>
                 </div>
             </div>
             <div class="modal-footer">
@@ -89,7 +93,7 @@
     </div>
     <div class="Divider">Spieler hinzufügen</div>
     <div class="PlayerForm">
-        <form method="post" action="/player_add">
+        <form method="post" action="/trainer/player_add">
             <div class="mb-3">
                 <label for="name" class="form-label">Spieler Name</label>
                 <div class="input-group">
@@ -156,7 +160,7 @@
             </div>
             <div class="Divider">Spieler hinzufügen</div>
             <div class="PlayerForm">
-                <form method="post" action="/player_add">
+                <form method="post" action="/trainer/player_add">
                     <div class="mb-3">
                         <label for="name" class="form-label">Spieler Name</label>
                         <div class="input-group">

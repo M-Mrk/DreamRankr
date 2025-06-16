@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -7,7 +7,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-class Players(db.Model):  # Inherit from db.Model and capitalize class name
+class Players(db.Model): 
     id = db.Column(db.Integer, primary_key=True)
     ranking = db.Column(db.Integer, nullable=False)
     name = db.Column(db.String(100), nullable=False)
@@ -15,6 +15,27 @@ class Players(db.Model):  # Inherit from db.Model and capitalize class name
     losses = db.Column(db.Integer, nullable=False)
     setsWon = db.Column(db.Integer, nullable=False)
     setsLost = db.Column(db.Integer, nullable=False)
+
+class OnGoingMatches(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    challenger = db.Column(db.String(100), nullable=False)
+    challengerId = db.Column(db.Integer, nullable=False)
+    defender = db.Column(db.String(100), nullable=False)
+    defenderId = db.Column(db.Integer, nullable=False)
+    timeStarted = db.Column(db.DateTime, nullable=False)
+
+class FinishedMatches(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    challenger = db.Column(db.String(100), nullable=False)
+    challengerId = db.Column(db.Integer, nullable=False)
+    defender = db.Column(db.String(100), nullable=False)
+    defenderId = db.Column(db.Integer, nullable=False)
+    timeStarted = db.Column(db.DateTime, nullable=False)
+    timeFinished = db.Column(db.DateTime, nullable=False)
+    winner = db.Column(db.String(100), nullable=False)
+    winnerId = db.Column(db.Integer, nullable=False)
+    challengerScore = db.Column(db.Integer, nullable=False)
+    defenderScore = db.Column(db.Integer, nullable=False)
 
 @app.route('/')
 def home():
@@ -27,7 +48,30 @@ def trainer():
     activeGames = [] # Placeholder for active games, if any !!Temprorary!!
     return render_template('trainer.html', players=players, activeGames=activeGames)
 
-@app.route('/player_add', methods=['POST'])
+@app.route('/trainer/start_match', methods=['POST'])
+def start_match():
+    challengerId = request.form.get('challenger_id')
+    defenderId = request.form.get('defender_id')
+    if not challengerId or not defenderId:
+        print("Challenger or defender ID is missing.")
+        return redirect('/trainer')
+    challenger = db.session.get(Players, challengerId)
+    defender = db.session.get(Players, defenderId)
+    new_match = OnGoingMatches(
+        challenger = challenger.name,
+        challengerId = challengerId,
+        defender = defender.name,
+        defenderId = defenderId,
+        timeStarted = db.func.now()
+    )
+    db.session.add(new_match)
+    db.session.commit()
+    print(f"Starting match from {challenger.name} against {defender.name}")
+
+    return redirect('/trainer')
+
+
+@app.route('/trainer/player_add', methods=['POST'])
 def player_add():
     name = request.form.get('name')
     print(f"Adding player: {name}")
@@ -52,7 +96,7 @@ def player_add():
             )
             db.session.add(new_player)
             db.session.commit()
-    return trainer()
+    return redirect('/trainer')
 
 
 if __name__ == '__main__':

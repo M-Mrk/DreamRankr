@@ -123,6 +123,26 @@ function initializeChallengeSystem() {
     return;
   }
 
+  // Get or create hidden input fields for challenger and defender IDs
+  let challengerIdInput = document.getElementById("challenger-id");
+  let defenderIdInput = document.getElementById("defender-id");
+
+  if (!challengerIdInput) {
+    challengerIdInput = document.createElement("input");
+    challengerIdInput.type = "hidden";
+    challengerIdInput.id = "challenger-id";
+    challengerIdInput.name = "challenger_id";
+    challengeModal.querySelector("form").appendChild(challengerIdInput);
+  }
+
+  if (!defenderIdInput) {
+    defenderIdInput = document.createElement("input");
+    defenderIdInput.type = "hidden";
+    defenderIdInput.id = "defender-id";
+    defenderIdInput.name = "defender_id";
+    challengeModal.querySelector("form").appendChild(defenderIdInput);
+  }
+
   // Get players data from the page
   const playerRows = document.querySelectorAll(".player-row");
   const allPlayers = Array.from(playerRows).map((row) => ({
@@ -150,6 +170,9 @@ function initializeChallengeSystem() {
       challengeInput.disabled = false;
       challengeInput.placeholder = "Wähle einen Spieler...";
 
+      // Set challenger ID in hidden input
+      challengerIdInput.value = playerId;
+
       // Check if player is already rank 1 (highest ranking)
       if (currentPlayer.ranking === 1) {
         challengeInput.placeholder = "Ist bereits der beste";
@@ -167,6 +190,7 @@ function initializeChallengeSystem() {
       eligiblePlayers.forEach((player) => {
         const option = document.createElement("option");
         option.value = player.name;
+        option.setAttribute("data-player-id", player.id);
         challengeDatalist.appendChild(option);
       });
 
@@ -176,26 +200,40 @@ function initializeChallengeSystem() {
     });
   });
 
-  // Validate input to only allow eligible players
+  // Validate input and update defender ID
   challengeInput.addEventListener("input", function () {
     if (this.disabled) return;
 
     const currentValue = this.value;
-    const options = Array.from(challengeDatalist.options).map(
-      (option) => option.value
-    );
+    const options = Array.from(challengeDatalist.options);
+    const validOption = options.find((option) => option.value === currentValue);
 
-    if (currentValue && !options.includes(currentValue)) {
+    if (currentValue && !validOption) {
       this.setCustomValidity("Please select a valid player from the list");
+      defenderIdInput.value = "";
     } else {
       this.setCustomValidity("");
+      if (validOption) {
+        // Find the defender's ID
+        const defenderId =
+          validOption.getAttribute("data-player-id") ||
+          allPlayers.find((p) => p.name === currentValue)?.id ||
+          "";
+        defenderIdInput.value = defenderId;
+      } else {
+        defenderIdInput.value = "";
+      }
     }
   });
 
-  // Handle form submission
+  // Handle form submission - make Starten button submit the form
   const startButton = challengeModal.querySelector(".btn-primary");
-  if (startButton) {
-    startButton.addEventListener("click", function () {
+  const challengeForm = challengeModal.querySelector("form");
+
+  if (startButton && challengeForm) {
+    startButton.addEventListener("click", function (e) {
+      e.preventDefault(); // Prevent default button behavior
+
       // Check if input is disabled (rank 1 player)
       if (challengeInput.disabled) {
         alert(
@@ -205,49 +243,26 @@ function initializeChallengeSystem() {
       }
 
       const challengedPlayer = challengeInput.value;
-      const challengerId = challengeModal.getAttribute("data-challenger-id");
-      const challengerName = challengeModal.getAttribute(
-        "data-challenger-name"
-      );
+      const challengerId = challengerIdInput.value;
+      const defenderId = defenderIdInput.value;
 
-      if (!challengedPlayer || !challengerId) {
+      if (!challengedPlayer || !challengerId || !defenderId) {
         alert("Please select a player to challenge");
         return;
       }
 
-      // Find challenged player ID
-      const challengedPlayerObj = allPlayers.find(
-        (p) => p.name === challengedPlayer
-      );
-      if (!challengedPlayerObj) {
-        alert("Invalid player selection");
-        return;
-      }
-
       console.log("Challenge:", {
-        challenger: { id: challengerId, name: challengerName },
-        challenged: { id: challengedPlayerObj.id, name: challengedPlayer },
+        challenger_id: challengerId,
+        defender_id: defenderId,
+        challenged_player_name: challengedPlayer,
       });
 
-      // Close modal
-      const modalInstance = bootstrap.Modal.getInstance(challengeModal);
-      modalInstance.hide();
-
-      // You can add an AJAX call here to submit the challenge
-      // fetch('/create_challenge', {
-      //     method: 'POST',
-      //     headers: {'Content-Type': 'application/json'},
-      //     body: JSON.stringify({
-      //         challenger_id: challengerId,
-      //         challenged_id: challengedPlayerObj.id
-      //     })
-      // });
+      // Submit the form
+      challengeForm.submit();
     });
   }
 }
 
-// Initialize challenge system when DOM is loaded
 document.addEventListener("DOMContentLoaded", function () {
-  // ...existing code...
   initializeChallengeSystem();
 });
