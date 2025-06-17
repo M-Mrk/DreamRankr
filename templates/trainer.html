@@ -8,16 +8,16 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">Herausforderung beginnen</h1>
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Start Challenge</h1>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label id="challengeWindowInputLabel" for="input-datalist">Spieler fordert wen heraus?</label>
+                    <label id="challengeWindowInputLabel" for="input-datalist">Who does the player challenge?</label>
                     <form method="post" action="/trainer/start_match">
                         <input type="text" 
                             class="form-control" 
-                            placeholder="Wähle einen Spieler..." 
+                            placeholder="Choose a player..." 
                             list="list-timezone" 
                             id="input-datalist"
                             autocomplete="off"
@@ -28,14 +28,14 @@
                             <!-- Options will be populated dynamically -->
                         </datalist>
                         <div class="invalid-feedback">
-                            Bitte wähle einen gültigen Spieler aus der Liste.
+                            Please select a valid player from the list.
                         </div>
                     </form>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-                <button type="button" class="btn btn-primary">Starten</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">Start</button>
             </div>
         </div>
     </div>
@@ -67,9 +67,9 @@
             <thead class="table-dark">
                 <tr>
                     <th>Ranking</th>
-                    <th>Spieler</th>
-                    <th>Siege</th>
-                    <th>Verluste</th>
+                    <th>Player</th>
+                    <th>Wins</th>
+                    <th>Losses</th>
                 </tr>
             </thead>
             <tbody>
@@ -89,7 +89,7 @@
                                     data-bs-target="#challengeWindow"
                                     data-player-id="{{ player.id }}"
                                     data-player-name="{{ player.name }}">
-                                Herausforderung
+                                Challenge
                             </button>
                             <button class="btn btn-warning">Timeout</button>
                             <button class="btn btn-secondary edit-btn" data-player-name="{{ player.name }}">Edit</button>
@@ -101,9 +101,9 @@
             </tbody>
         </table>
     </div>
-    <div class="Divider">Aktive Herausforderungen</div>
+    <div class="Divider">Active Challenges</div>
     <div class="activeMatches">
-        <p>Hier werden die aktiven Herausforderungen angezeigt.</p>
+        <p>Active challenges will be displayed here.</p>
         {% if activeMatches %}
             <div id="activeMatchesCarouselNormal" class="carousel slide">
                 <div class="carousel-inner">
@@ -122,7 +122,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <p>Seit: {{ activeMatches[0].timeStarted.strftime('%H:%M') }}</p>
+                            <p>Since: {{ activeMatches[0].timeStarted.strftime('%H:%M') }}</p>
                             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#finishMatchModal">Finish Match</button>
                         </div>
                     </div>
@@ -142,7 +142,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <p>Seit: {{ match.timeStarted.strftime('%H:%M') }}</p>
+                                <p>Since: {{ match.timeStarted.strftime('%H:%M') }}</p>
                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#finishMatchModal">Finish Match</button>
                             </div>
                         </div>
@@ -158,17 +158,17 @@
                 </button>
             </div>
         {% else %}
-            <p>Aktuell gibt es keine aktiven Herausforderungen.</p>
+            <p>There are currently no active challenges.</p>
         {% endif %}
     </div>
-    <div class="Divider">Spieler hinzufügen</div>
+    <div class="Divider">Add Player</div>
     <div class="PlayerForm">
         <form method="post" action="/trainer/player_add">
             <div class="mb-3">
-                <label for="name" class="form-label">Spieler Name</label>
+                <label for="name" class="form-label">Player Name</label>
                 <div class="input-group">
                     <input type="text" class="form-control" id="name" name="name" required>
-                    <button type="submit" class="btn btn-dark">Spieler hinzufügen</button>
+                    <button type="submit" class="btn btn-dark">Add Player</button>
                 </div>
             </div>
         </form>
@@ -183,9 +183,9 @@
                     <thead class="table-dark">
                         <tr>
                             <th>Ranking</th>
-                            <th>Spieler</th>
-                            <th>Siege</th>
-                            <th>Verluste</th>
+                            <th>Player</th>
+                            <th>Wins</th>
+                            <th>Losses</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -205,7 +205,7 @@
                                             data-bs-target="#challengeWindow"
                                             data-player-id="{{ player.id }}"
                                             data-player-name="{{ player.name }}">
-                                        Herausforderung
+                                        Challenge
                                     </button>
                                     <button class="btn btn-warning">Timeout</button>
                                     <button class="btn btn-secondary edit-btn" data-player-name="{{ player.name }}">Edit</button>
@@ -219,9 +219,9 @@
             </div>
         </div>
         <div class="otherColumn">
-            <div class="Divider">Aktive Herausforderungen</div>
+            <div class="Divider">Active Challenges</div>
             <div class="activeMatches">
-                <p>Hier werden die aktiven Herausforderungen angezeigt.</p>
+                <p>Active challenges will be displayed here.</p>
                 {% if activeMatches %}
                     <div id="activeMatchesCarouselNormal" class="carousel slide">
                         <div class="carousel-inner">
@@ -240,7 +240,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <p>Seit: {{ activeMatches[0].timeStarted.strftime('%H:%M') }}</p>
+                                    <p>Since: {{ activeMatches[0].timeStarted.strftime('%H:%M') }}</p>
                                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#finishMatchModal">Finish Match</button>
                                 </div>
                             </div>
@@ -260,7 +260,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <p>Seit: {{ match.timeStarted.strftime('%H:%M') }}</p>
+                                        <p>Since: {{ match.timeStarted.strftime('%H:%M') }}</p>
                                         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#finishMatchModal">Finish Match</button>
                                     </div>
                                 </div>
@@ -276,17 +276,17 @@
                         </button>
                     </div>
                 {% else %}
-                    <p>Aktuell gibt es keine aktiven Herausforderungen.</p>
+                    <p>There are currently no active challenges.</p>
                 {% endif %}
             </div>
-            <div class="Divider">Spieler hinzufügen</div>
+            <div class="Divider">Add Player</div>
             <div class="PlayerForm">
                 <form method="post" action="/trainer/player_add">
                     <div class="mb-3">
-                        <label for="name" class="form-label">Spieler Name</label>
+                        <label for="name" class="form-label">Player Name</label>
                         <div class="input-group">
                             <input type="text" class="form-control" id="name" name="name" required>
-                            <button type="submit" class="btn btn-dark">Spieler hinzufügen</button>
+                            <button type="submit" class="btn btn-dark">Add Player</button>
                         </div>
                     </div>
                 </form>
