@@ -41,6 +41,25 @@
     </div>
 </div>
 
+<!-- Finish Match Modal -->
+<div class="modal fade" id="finishMatchModal" tabindex="-1" aria-labelledby="finishMatchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="finishMatchModalLabel">Finish Match</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body"  id="finishMatchModalContent">
+                <!-- Modal content will go here -->
+                <p>Modal content placeholder</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="startSpinner('finishMatchModalContent')">Finish Match</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="mobileView">
     <div class="table-responsive">
@@ -83,10 +102,61 @@
         </table>
     </div>
     <div class="Divider">Aktive Herausforderungen</div>
-    <div class="activeGames">
+    <div class="activeMatches">
         <p>Hier werden die aktiven Herausforderungen angezeigt.</p>
-        {% if activeGames %}
-            <p>Es gibt aktive Herausforderungen</p>
+        {% if activeMatches %}
+            <div id="activeMatchesCarouselNormal" class="carousel slide">
+                <div class="carousel-inner">
+                    <div class="carousel-item active">
+                        <div class="d-flex flex-column justify-content-center d-block w-100">
+                            <div class="container text-center">
+                                <div class="row">
+                                    <div class="col">
+                                        <h4>{{ activeMatches[0].challenger }}</h5>
+                                    </div>
+                                    <div class="col">
+                                    <h5>vs</h5>
+                                    </div>
+                                    <div class="col">
+                                        <h4>{{ activeMatches[0].defender }}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <p>Seit: {{ activeMatches[0].timeStarted.strftime('%H:%M') }}</p>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#finishMatchModal">Finish Match</button>
+                        </div>
+                    </div>
+                    {% for match in activeMatches[1:] %}
+                        <div class="carousel-item">
+                            <div class="d-flex flex-column justify-content-center d-block w-100">
+                                <div class="container text-center">
+                                    <div class="row">
+                                        <div class="col">
+                                            <h4>{{ match.challenger }}</h5>
+                                        </div>
+                                        <div class="col">
+                                        <h5>vs</h5>
+                                        </div>
+                                        <div class="col">
+                                            <h4>{{ match.defender }}</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p>Seit: {{ match.timeStarted.strftime('%H:%M') }}</p>
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#finishMatchModal">Finish Match</button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#activeMatchesCarouselNormal" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#activeMatchesCarouselNormal" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
         {% else %}
             <p>Aktuell gibt es keine aktiven Herausforderungen.</p>
         {% endif %}
@@ -150,10 +220,61 @@
         </div>
         <div class="otherColumn">
             <div class="Divider">Aktive Herausforderungen</div>
-            <div class="activeGames">
+            <div class="activeMatches">
                 <p>Hier werden die aktiven Herausforderungen angezeigt.</p>
-                {% if activeGames %}
-                    <p>Es gibt aktive Herausforderungen</p>
+                {% if activeMatches %}
+                    <div id="activeMatchesCarouselNormal" class="carousel slide">
+                        <div class="carousel-inner">
+                            <div class="carousel-item active">
+                                <div class="d-flex flex-column justify-content-center d-block w-100">
+                                    <div class="container text-center">
+                                        <div class="row">
+                                            <div class="col">
+                                                <h4>{{ activeMatches[0].challenger }}</h5>
+                                            </div>
+                                            <div class="col">
+                                            <h5>vs</h5>
+                                            </div>
+                                            <div class="col">
+                                                <h4>{{ activeMatches[0].defender }}</h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p>Seit: {{ activeMatches[0].timeStarted.strftime('%H:%M') }}</p>
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#finishMatchModal">Finish Match</button>
+                                </div>
+                            </div>
+                            {% for match in activeMatches[1:] %}
+                                <div class="carousel-item">
+                                    <div class="d-flex flex-column justify-content-center d-block w-100">
+                                        <div class="container text-center">
+                                            <div class="row">
+                                                <div class="col">
+                                                    <h4>{{ match.challenger }}</h5>
+                                                </div>
+                                                <div class="col">
+                                                <h5>vs</h5>
+                                                </div>
+                                                <div class="col">
+                                                    <h4>{{ match.defender }}</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p>Seit: {{ match.timeStarted.strftime('%H:%M') }}</p>
+                                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#finishMatchModal">Finish Match</button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#activeMatchesCarouselNormal" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#activeMatchesCarouselNormal" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
+                    </div>
                 {% else %}
                     <p>Aktuell gibt es keine aktiven Herausforderungen.</p>
                 {% endif %}

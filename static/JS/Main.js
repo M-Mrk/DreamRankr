@@ -86,8 +86,8 @@ function toggleExpandRow(playerId) {
 
 document.addEventListener(
   "DOMContentLoaded",
-  (e) => {
-    $("#input-datalist").autocomplete();
+  () => {
+    // $("#input-datalist").autocomplete(); only works with jQuery
   },
   false
 );
@@ -266,3 +266,9 @@ function initializeChallengeSystem() {
 document.addEventListener("DOMContentLoaded", function () {
   initializeChallengeSystem();
 });
+
+function startSpinner(id) {
+  const modal = document.getElementById(id);
+  modal.textContent = '';
+  modal.innerHTML = '<div class="d-flex justify-content-center"> <div class="spinner-border" role="status"> <span class="visually-hidden">Loading...</span> </div> </div>';
+}

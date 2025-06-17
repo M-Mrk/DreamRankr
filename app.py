@@ -45,8 +45,8 @@ def home():
 @app.route('/trainer')
 def trainer():
     players = Players.query.order_by(Players.ranking).all()  # Use capital P for the class
-    activeGames = [] # Placeholder for active games, if any !!Temprorary!!
-    return render_template('trainer.html', players=players, activeGames=activeGames)
+    activeMatches = OnGoingMatches.query.order_by(OnGoingMatches.timeStarted.asc()).all()  # Use capital O for the class
+    return render_template('trainer.html', players=players, activeMatches=activeMatches)
 
 @app.route('/trainer/start_match', methods=['POST'])
 def start_match():

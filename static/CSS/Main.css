@@ -123,3 +123,44 @@ hr {
 label {
     margin-left: 0.5rem;
 }
+
+/* Carousel styling */
+
+.carousel-item {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 2rem;
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+.carousel-item > * {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.carousel-item p {
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+.carousel-item .btn {
+    display: block;
+    margin: 1rem auto 0 auto;
+    width: fit-content;
+    align-self: center;
+}
+
+/* Modal styling */
+.modal-content {
+    border-radius: 0.5rem;
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+}
