@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", function () {
         "challengeWIndowInputLabel"
       );
       if (modalInputLabel) {
-        modalInputLabel.textContent = `${playerName} fordert den folgenden heraus:`;
+        modalInputLabel.textContent = `${playerName} challenges the following:`;
       }
 
       // Store player ID for form submission
@@ -55,31 +55,22 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function toggleExpandRow(playerId) {
-  // Check if we're in mobile or normal view
-  const mobileExpandRow = document.getElementById(`expand-mobile-${playerId}`);
-  const normalExpandRow = document.getElementById(`expand-normal-${playerId}`);
+  // Find the expand row for this player
+  const expandRow = document.getElementById(`expand-${playerId}`);
 
-  // Toggle mobile view expand row
-  if (mobileExpandRow) {
-    if (
-      mobileExpandRow.style.display === "none" ||
-      mobileExpandRow.style.display === ""
-    ) {
-      mobileExpandRow.style.display = "table-row";
-    } else {
-      mobileExpandRow.style.display = "none";
-    }
-  }
+  if (expandRow) {
+    // Close all other expanded rows first
+    document.querySelectorAll(".expand-row").forEach((row) => {
+      if (row !== expandRow) {
+        row.style.display = "none";
+      }
+    });
 
-  // Toggle normal view expand row
-  if (normalExpandRow) {
-    if (
-      normalExpandRow.style.display === "none" ||
-      normalExpandRow.style.display === ""
-    ) {
-      normalExpandRow.style.display = "table-row";
+    // Toggle this row
+    if (expandRow.style.display === "none" || expandRow.style.display === "") {
+      expandRow.style.display = "table-row";
     } else {
-      normalExpandRow.style.display = "none";
+      expandRow.style.display = "none";
     }
   }
 }
@@ -102,7 +93,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const playerName = button.getAttribute("data-player-name");
 
     // Update the label text
-    challengeLabel.textContent = `${playerName} fordert wen heraus?`;
+    challengeLabel.textContent = `${playerName} challenges who?`;
   });
 });
 
@@ -162,20 +153,20 @@ function initializeChallengeSystem() {
       if (!currentPlayer) return;
 
       // Update modal title and label
-      challengeLabel.textContent = playerName + " fordert wen heraus?";
+      challengeLabel.textContent = playerName + " challenges who?";
 
       // Clear previous options and input
       challengeDatalist.innerHTML = "";
       challengeInput.value = "";
       challengeInput.disabled = false;
-      challengeInput.placeholder = "Wähle einen Spieler...";
+      challengeInput.placeholder = "Choose a player...";
 
       // Set challenger ID in hidden input
       challengerIdInput.value = playerId;
 
       // Check if player is already rank 1 (highest ranking)
       if (currentPlayer.ranking === 1) {
-        challengeInput.placeholder = "Ist bereits der beste";
+        challengeInput.placeholder = "Is already the best!";
         challengeInput.disabled = true;
         challengeModal.setAttribute("data-challenger-id", "");
         challengeModal.setAttribute("data-challenger-name", "");
@@ -237,7 +228,7 @@ function initializeChallengeSystem() {
       // Check if input is disabled (rank 1 player)
       if (challengeInput.disabled) {
         alert(
-          "Dieser Spieler ist bereits der beste und kann niemanden herausfordern!"
+          "This player is already the best and cannot be challenged!"
         );
         return;
       }
@@ -269,6 +260,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function startSpinner(id) {
   const modal = document.getElementById(id);
-  modal.textContent = '';
-  modal.innerHTML = '<div class="d-flex justify-content-center"> <div class="spinner-border" role="status"> <span class="visually-hidden">Loading...</span> </div> </div>';
+  modal.textContent = "";
+  modal.innerHTML =
+    '<div class="d-flex justify-content-center"> <div class="spinner-border" role="status"> <span class="visually-hidden">Loading...</span> </div> </div>';
 }
