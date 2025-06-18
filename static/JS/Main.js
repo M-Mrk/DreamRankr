@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", function () {
 function initializeChallengeSystem() {
   const challengeModal = document.getElementById("challengeWindow");
   const challengeInput = document.getElementById("input-datalist");
-  const challengeDatalist = document.getElementById("list-timezone");
+  const challengeDatalist = document.getElementById("list-defender");
   const challengeLabel = document.getElementById("challengeWindowInputLabel");
 
   // Check if elements exist (only on trainer page)
