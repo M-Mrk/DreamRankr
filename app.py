@@ -11,10 +11,12 @@ class Players(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ranking = db.Column(db.Integer, nullable=False)
     name = db.Column(db.String(100), nullable=False)
+    points = db.Column(db.Integer, nullable=False) #1 Match = +1 Point and 1 Win = +1 Point
     wins = db.Column(db.Integer, nullable=False)
     losses = db.Column(db.Integer, nullable=False)
     setsWon = db.Column(db.Integer, nullable=False)
     setsLost = db.Column(db.Integer, nullable=False)
+    lastRanking = db.Column(db.Integer, nullable=True) #To indicate changes in the rankings
 
 class OnGoingMatches(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -34,8 +36,68 @@ class FinishedMatches(db.Model):
     timeFinished = db.Column(db.DateTime, nullable=False)
     winner = db.Column(db.String(100), nullable=False)
     winnerId = db.Column(db.Integer, nullable=False)
-    challengerScore = db.Column(db.Integer, nullable=False)
-    defenderScore = db.Column(db.Integer, nullable=False)
+    challengerScore = db.Column(db.Integer, nullable=True)
+    defenderScore = db.Column(db.Integer, nullable=True)
+
+def checkIfWinnerIsLower(winnerId, looserId):
+    winner = db.session.get(Players, winnerId)
+    looser = db.session.get(Players, looserId)
+    if winner.ranking < looser.ranking:
+        return True
+    else:
+        return False
+
+def rankPlayerUp(playerId): #Ranks given Player one higher and deranks other Player, who is above the given Player, basically swaps ranking between them
+    player = db.session.get(Players, playerId)
+    currentRanking = player.ranking
+    if currentRanking == 1: #Stops if Player is already highest ranking
+        return
+    newRanking = currentRanking + 1
+    player.lastRanking = currentRanking #Update Players last Ranking to the currentRanking before updating
+    player.ranking = newRanking
+    otherPlayer = Players.query.filter_by(ranking=newRanking).first()
+    otherPlayer.lastRanking = otherPlayer.ranking #Update otherPlayers last Ranking to current Ranking before updating ranking
+    otherPlayer.ranking = currentRanking
+
+    db.session.commit()
+
+def getMatchesPlayed(playerId):
+    player = db.session.get(Players, playerId)
+    wins = player.wins
+    losses = player.losses
+    return wins + losses
+
+def increaseWinsLosses(winnerId, looserId):
+    winner = db.session.get(Players, winnerId)
+    looser = db.session.get(Players, looserId)
+    winner.wins = winner.wins + 1
+    looser.wins = looser.wins + 1
+    db.session.commit()
+
+def updatePoints(playerId, won):
+    player = db.session.get(Players, playerId)
+    if won == True:
+        player.points = player.points + 2
+    else:
+        player.points = player.points + 1
+    db.session.commit()
+
+def changeSetStats(playerId, wonSets, lostSets):
+    player = db.session.get(Players, playerId)
+    player.setsWon = player.setsWon + wonSets
+    player.setsLost = player.setsLost + lostSets
+    db.session.commit()
+
+def changeStats(winnerId, looserId, winnerSetsWon, looserSetsWon):
+    if checkIfWinnerIsLower(winnerId, looserId):
+        rankPlayerUp(winnerId)
+    increaseWinsLosses(winnerId, looserId)
+    updatePoints(winnerId, won=True)
+    updatePoints(looserId, won=False)
+    if winnerSetsWon and looserSetsWon:
+        changeSetStats(winnerId, winnerSetsWon, looserSetsWon)
+        changeSetStats(looserId, looserSetsWon, winnerSetsWon)
+
 
 @app.route('/')
 def home():
@@ -70,6 +132,60 @@ def start_match():
 
     return redirect('/trainer')
 
+@app.route('/trainer/finish_match', methods=['POST'])
+def finish_match():
+    matchId = request.form.get('match_id')
+    match = db.session.get(OnGoingMatches, matchId)
+    challenger = db.session.get(Players, match.challengerId)
+    defender = db.session.get(Players, match.defenderId)
+    if request.form.get('challenger_score') and request.form.get('defender_score'): #Sets Looser and Winner | check if Score was provided
+        challengerScore = request.form.get('challenger_score')
+        defenderScore = request.form.get('defender_score')
+        if challengerScore > defenderScore: #decide based on score who won | challengers score is higher = challenger won
+            winner = challenger.name
+            winnerId = challenger.id
+            winnerSetsWon = challengerScore
+            looserSetsWon = defenderScore
+            looserId = defender.id
+        elif defenderScore > challengerScore: #defender Won
+            winner = defender.name
+            winnerId = defender.id 
+            winnerSetsWon = defenderScore
+            looserSetsWon = challengerScore
+            looserId = challenger.id
+    else: #alternative logic if only who won is provided
+        winnerId = request.form.get('winnerId')
+        if winnerId == challenger.id: 
+            winner = challenger.name
+            looserId = defender.id
+        else:
+            winner = defender.name
+            looserId = challenger.id
+    if not winner or not winnerId:
+        return redirect('/trainer') #WIP: Error message: Winner couldnt be decided/wasnt transmitted, ties arent allowed
+
+    new_finishedmatch = FinishedMatches(
+        challenger = challenger.name,
+        challengerId = challenger.id,
+        defender = defender.name,
+        defenderId = defender.id,
+        timeStarted = match.timeStarted,
+        timeFinished = db.func.now(),
+        winner = winner,
+        winnerId = winnerId,
+        challengerScore = challengerScore if challengerScore and defenderScore else None,
+        defenderScore = defenderScore if challengerScore and defenderScore else None
+    )
+
+    try:
+        changeStats(winnerId=winnerId, looserId=looserId, winnerSetsWon=winnerSetsWon, looserSetsWon=looserSetsWon)
+        db.session.add(new_finishedmatch)
+        db.session.delete(match)
+        db.session.commit()
+        return redirect('/trainer')
+    except:
+        return redirect('/trainer') #WIP: Error message
+    
 
 @app.route('/trainer/player_add', methods=['POST'])
 def player_add():
@@ -105,9 +221,9 @@ if __name__ == '__main__':
         # Add some test data if none exists
         if Players.query.count() == 0:
             test_players = [
-                Players(ranking=1, name="Alice", wins=12, losses=3, setsWon=25, setsLost=10),
-                Players(ranking=2, name="Bob", wins=10, losses=4, setsWon=22, setsLost=12),
-                Players(ranking=3, name="Charlie", wins=8, losses=6, setsWon=18, setsLost=15),
+                Players(ranking=1, name="Alice", wins=12, points=15, losses=3, setsWon=25, setsLost=10),
+                Players(ranking=2, name="Bob", wins=10, points=14, losses=4, setsWon=22, setsLost=1),
+                Players(ranking=3, name="Charlie", wins=8, points=14, losses=6, setsWon=18, setsLost=15),
             ]
             for player in test_players:
                 db.session.add(player)
