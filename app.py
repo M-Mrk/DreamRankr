@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect
+from flask_migrate import Migrate
 from db import db, Players, OnGoingMatches, FinishedMatches
 from logger import log
 
@@ -7,6 +8,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Main.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+migrate = Migrate(app, db)
 
 # Import stat functions from playerStats module
 from playerStats import changeStats
@@ -158,8 +160,8 @@ def player_add():
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()  # Create tables
-        # Add some test data if none exists
+        # Note: db.create_all() is now handled by Flask-Migrate
+        # Only add test data if none exists
         if Players.query.count() == 0:
             test_players = [
                 Players(ranking=1, name="Alice", wins=12, points=15, losses=3, setsWon=25, setsLost=10),

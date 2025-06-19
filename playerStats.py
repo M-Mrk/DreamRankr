@@ -1,5 +1,6 @@
 from db import db, Players
 from logger import log
+from datetime import datetime, timezone
 
 def checkIfWinnerIsLower(winner, loser):
     if winner.ranking > loser.ranking:
@@ -21,9 +22,11 @@ def rankPlayerUp(player): #Ranks given Player one higher and deranks other Playe
         log(3, "rankPlayerUp", f"otherPlayer doesnt exist/couldnt be found. Searched for player with Ranking: {newRanking}")
         return
     
-    # Update both players' lastRanking before swapping
+    # Update both players' lastRanking and timestamp before swapping
     player.lastRanking = currentRanking
+    player.lastRankingChanged = datetime.now(timezone.utc)
     otherPlayer.lastRanking = otherPlayer.ranking
+    otherPlayer.lastRankingChanged = datetime.now(timezone.utc)
     
     # Swap rankings
     player.ranking = newRanking

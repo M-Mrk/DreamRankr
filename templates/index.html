@@ -8,6 +8,7 @@
         <thead class="table-dark">
             <tr>
                 <th>Ranking</th>
+                <th></th>
                 <th>Spieler</th>
                 <th>Points</th>
                 <th>Siege</th>
@@ -21,6 +22,22 @@
             {% for player in players %}
             <tr>
                 <td><strong>{{ player.ranking }}</strong></td>
+                <td>
+                    {% if player.lastRanking and player.lastRankingChanged %}
+                        {% set hours_since_change = (moment().utctimetuple()[0:6] | list | join(',') | strptime('%Y,%m,%d,%H,%M,%S') - player.lastRankingChanged).total_seconds() / 3600 %}
+                        {% if hours_since_change <= 12 %}
+                            {% if player.lastRanking < player.ranking %}
+                                <span class="badge bg-danger">
+                                    <i class="fs-5">↓</i>
+                                </span>
+                            {% elif player.lastRanking > player.ranking %}
+                                <span class="badge bg-success">
+                                    <i class="fs-5">↑</i>
+                                </span>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                </td>
                 <td>{{ player.name }}</td>
                 <td>{{ player.points }}</td>
                 <td>{{ player.wins }}</td>

@@ -13,6 +13,7 @@ class Players(db.Model):
     setsWon = db.Column(db.Integer, nullable=False)
     setsLost = db.Column(db.Integer, nullable=False)
     lastRanking = db.Column(db.Integer, nullable=True) #To indicate changes in the rankings
+    lastRankingChanged = db.Column(db.DateTime, nullable=True) #When the ranking change occurred
 
 class OnGoingMatches(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -41,4 +42,3 @@ class LogEntries(db.Model):
     level = db.Column(db.String(15))
     origin = db.Column(db.String(25))
     message = db.Column(db.Text)
-    
