@@ -11,7 +11,6 @@ db.init_app(app)
 # Import stat functions from playerStats module
 from playerStats import changeStats
 
-
 @app.route('/')
 def home():
     players = Players.query.order_by(Players.ranking).all()
@@ -90,9 +89,9 @@ def finish_match():
             loserId = challenger.id
     if not winner or not winnerId:
         if challengerScore or defenderScore:
-            error = f"Winner or WinnerId could not been resolved when finishing a match. ChallengerScore: {challengerScore} and defenderScore: {defenderScore}"
+            error = f"Winner or WinnerId could not be resolved when finishing a match. ChallengerScore: {challengerScore} and defenderScore: {defenderScore}"
         else:
-            error = f"Winner or WinnerId could not been resolved when finishing a match"
+            error = f"Winner or WinnerId could not be resolved when finishing a match"
         log(3, "finish_match", error)
         return redirect('/trainer') #WIP: Error message: Winner couldnt be decided/wasnt transmitted, ties arent allowed
 
