@@ -24,7 +24,7 @@
                 <td><strong>{{ player.ranking }}</strong></td>
                 <td>
                     {% if player.lastRanking and player.lastRankingChanged %}
-                        {% set hours_since_change = (moment().utctimetuple()[0:6] | list | join(',') | strptime('%Y,%m,%d,%H,%M,%S') - player.lastRankingChanged).total_seconds() / 3600 %}
+                        {% set hours_since_change = (now() - player.lastRankingChanged).total_seconds() / 3600 %}
                         {% if hours_since_change <= 12 %}
                             {% if player.lastRanking < player.ranking %}
                                 <span class="badge bg-danger">
