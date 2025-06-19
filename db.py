@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime, timezone
 
 db = SQLAlchemy()
 
@@ -33,3 +34,11 @@ class FinishedMatches(db.Model):
     winnerId = db.Column(db.Integer, nullable=False)
     challengerScore = db.Column(db.Integer, nullable=True)
     defenderScore = db.Column(db.Integer, nullable=True)
+
+class LogEntries(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    level = db.Column(db.String(15))
+    origin = db.Column(db.String(25))
+    message = db.Column(db.Text)
+    

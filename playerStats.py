@@ -1,4 +1,5 @@
 from db import db, Players
+from logger import log
 
 def checkIfWinnerIsLower(winnerId, loserId):
     winner = db.session.get(Players, winnerId)

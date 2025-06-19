@@ -1,8 +1,9 @@
 from flask import Flask, render_template, request, redirect
 from db import db, Players, OnGoingMatches, FinishedMatches
+from logger import log
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///players.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Main.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -13,13 +14,13 @@ from playerStats import changeStats
 
 @app.route('/')
 def home():
-    players = Players.query.order_by(Players.ranking).all()  # Use capital P for the class
+    players = Players.query.order_by(Players.ranking).all()
     return render_template('index.html', players=players)
 
 @app.route('/trainer')
 def trainer():
-    players = Players.query.order_by(Players.ranking).all()  # Use capital P for the class
-    activeMatches = OnGoingMatches.query.order_by(OnGoingMatches.timeStarted.asc()).all()  # Use capital O for the class
+    players = Players.query.order_by(Players.ranking).all()
+    activeMatches = OnGoingMatches.query.order_by(OnGoingMatches.timeStarted.asc()).all()
     return render_template('trainer.html', players=players, activeMatches=activeMatches)
 
 @app.route('/trainer/start_match', methods=['POST'])
@@ -27,7 +28,7 @@ def start_match():
     challengerId = request.form.get('challenger_id')
     defenderId = request.form.get('defender_id')
     if not challengerId or not defenderId:
-        print("Challenger or defender ID is missing.")
+        log(3, "start_match", f"Challenger or defender ID is missing. challengerId: {challengerId}, defenderId: {defenderId}")
         return redirect('/trainer')
     challenger = db.session.get(Players, challengerId)
     defender = db.session.get(Players, defenderId)
@@ -38,9 +39,12 @@ def start_match():
         defenderId = defenderId,
         timeStarted = db.func.now()
     )
-    db.session.add(new_match)
-    db.session.commit()
-    print(f"Starting match from {challenger.name} against {defender.name}")
+    try:
+        db.session.add(new_match)
+        db.session.commit()
+        log(1, "start_match", f"Starting match from {challenger.name}({challengerId}) against {defender.name}({defenderId})")
+    except Exception as e:
+        log(4, "start_match", f"Couldnt start match from {challenger.name}({challengerId}) against {defender.name}({defenderId}), because of: {e}")
 
     return redirect('/trainer')
 
@@ -59,7 +63,6 @@ def finish_match():
     loserSetsWon = None
     
     if request.form.get('challenger_score') and request.form.get('defender_score'): #Sets loser and Winner | check if Score was provided
-        print("score was submitted")
         challengerScore = int(request.form.get('challenger_score'))
         defenderScore = int(request.form.get('defender_score'))
         if challengerScore > defenderScore: #decide based on score who won | challengers score is higher = challenger won
@@ -75,20 +78,22 @@ def finish_match():
             loserSetsWon = challengerScore
             loserId = challenger.id
     else: #alternative logic if only who won is provided
-        print("no score submitted")
         winnerId = request.form.get('winner_id')
         if winnerId == "" or not winnerId:
             return redirect('/trainer') #WIP: Error message: Winner couldnt be decided/wasnt transmitted, ties arent allowed
         winnerId = int(winnerId)
         if winnerId == challenger.id:
-            print("challengerWon")
             winner = challenger.name
             loserId = defender.id
         else:
             winner = defender.name
             loserId = challenger.id
     if not winner or not winnerId:
-        print("Error couldnt get winner or winnerId")
+        if challengerScore or defenderScore:
+            error = f"Winner or WinnerId could not been resolved when finishing a match. ChallengerScore: {challengerScore} and defenderScore: {defenderScore}"
+        else:
+            error = f"Winner or WinnerId could not been resolved when finishing a match"
+        log(3, "finish_match", error)
         return redirect('/trainer') #WIP: Error message: Winner couldnt be decided/wasnt transmitted, ties arent allowed
 
     new_finishedmatch = FinishedMatches(
@@ -105,7 +110,7 @@ def finish_match():
     )
 
     print(f"Match finished: {challenger.name} vs {defender.name}")
-    print(f"Winner: {winner} (ID: {winnerId})")
+    print(f"Winner: {winner} (ID: {winnerId})") #Temporary Debugging
     print(f"Scores - Challenger: {challengerScore if 'challengerScore' in locals() else 'N/A'}, Defender: {defenderScore if 'defenderScore' in locals() else 'N/A'}")
 
     try:
@@ -113,19 +118,20 @@ def finish_match():
         db.session.add(new_finishedmatch) #Works
         db.session.delete(match) #Works
         db.session.commit()
+        log(1, "finish_match", f"Finished match with now id: {new_finishedmatch.id}, winnerId: {winnerId}")
         return redirect('/trainer')
-    except:
+    except Exception as e:
+        log(4, "finish_match", f"Could not finish match with id: {matchId}, because of: {e}")
         return redirect('/trainer') #WIP: Error message
     
 
 @app.route('/trainer/player_add', methods=['POST'])
 def player_add():
     name = request.form.get('name')
-    print(f"Adding player: {name}")
     if name:
         currentPlayers = Players.query.order_by(Players.ranking).all()
         if name in [player.name for player in currentPlayers]:
-            print(f"Player {name} already exists.")
+            log(3, "player_add", "Submitted new player through /player_add already exists")
         else:
             # Determine the next ranking
             if currentPlayers:
@@ -143,7 +149,11 @@ def player_add():
                 setsLost=0
             )
             db.session.add(new_player)
-            db.session.commit()
+            try:
+                db.session.commit()
+                log(1, "player_add", f"Added new player: {name}. Now has Id: {new_player.id}")
+            except Exception as e:
+                log(4, "player_add", f"New player: {name} couldnt be added, because of {e}")
     return redirect('/trainer')
 
 
