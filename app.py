@@ -1,114 +1,14 @@
 from flask import Flask, render_template, request, redirect
-from flask_sqlalchemy import SQLAlchemy
+from db import db, Players, OnGoingMatches, FinishedMatches
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///players.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)
+db.init_app(app)
 
-class Players(db.Model): 
-    id = db.Column(db.Integer, primary_key=True)
-    ranking = db.Column(db.Integer, nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    points = db.Column(db.Integer, nullable=False) #1 Match = +1 Point and 1 Win = +1 Point
-    wins = db.Column(db.Integer, nullable=False)
-    losses = db.Column(db.Integer, nullable=False)
-    setsWon = db.Column(db.Integer, nullable=False)
-    setsLost = db.Column(db.Integer, nullable=False)
-    lastRanking = db.Column(db.Integer, nullable=True) #To indicate changes in the rankings
-
-class OnGoingMatches(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    challenger = db.Column(db.String(100), nullable=False)
-    challengerId = db.Column(db.Integer, nullable=False)
-    defender = db.Column(db.String(100), nullable=False)
-    defenderId = db.Column(db.Integer, nullable=False)
-    timeStarted = db.Column(db.DateTime, nullable=False)
-
-class FinishedMatches(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    challenger = db.Column(db.String(100), nullable=False)
-    challengerId = db.Column(db.Integer, nullable=False)
-    defender = db.Column(db.String(100), nullable=False)
-    defenderId = db.Column(db.Integer, nullable=False)
-    timeStarted = db.Column(db.DateTime, nullable=False)
-    timeFinished = db.Column(db.DateTime, nullable=False)
-    winner = db.Column(db.String(100), nullable=False)
-    winnerId = db.Column(db.Integer, nullable=False)
-    challengerScore = db.Column(db.Integer, nullable=True)
-    defenderScore = db.Column(db.Integer, nullable=True)
-
-def checkIfWinnerIsLower(winnerId, loserId):
-    winner = db.session.get(Players, winnerId)
-    loser = db.session.get(Players, loserId)
-    if winner.ranking > loser.ranking:
-        return True
-    else:
-        return False
-
-def rankPlayerUp(playerId): #Ranks given Player one higher and deranks other Player, who is above the given Player, basically swaps ranking between them
-    player = db.session.get(Players, playerId)
-    currentRanking = player.ranking
-    if currentRanking == 1: #Stops if Player is already highest ranking
-        print("Player is already highest Ranking")
-        return
-    newRanking = currentRanking - 1  # Fix: ranking should decrease (1 is better than 2)
-    print(f"currentRanking: {currentRanking}, newRanking: {newRanking}")
-    
-    # Find the other player BEFORE making any changes
-    otherPlayer = Players.query.filter_by(ranking=newRanking).first()
-    if not otherPlayer:
-        print("otherPlayer doesnt exist/couldnt be found")
-        return
-    
-    # Update both players' lastRanking before swapping
-    player.lastRanking = currentRanking
-    otherPlayer.lastRanking = otherPlayer.ranking
-    
-    # Swap rankings
-    player.ranking = newRanking
-    otherPlayer.ranking = currentRanking
-    
-    db.session.commit()
-
-def getMatchesPlayed(playerId):
-    player = db.session.get(Players, playerId)
-    wins = player.wins
-    losses = player.losses
-    return wins + losses
-
-def increaseWinsLosses(winnerId, loserId):
-    winner = db.session.get(Players, winnerId)
-    loser = db.session.get(Players, loserId)
-    winner.wins = winner.wins + 1
-    loser.losses = loser.losses + 1  # Fix: should increase losses, not wins
-    db.session.commit()
-
-def updatePoints(playerId, won):
-    player = db.session.get(Players, playerId)
-    if won == True:
-        player.points = player.points + 2
-    else:
-        player.points = player.points + 1
-    db.session.commit()
-
-def changeSetStats(playerId, wonSets, lostSets):
-    player = db.session.get(Players, playerId)
-    player.setsWon = player.setsWon + wonSets
-    player.setsLost = player.setsLost + lostSets
-    db.session.commit()
-
-def changeStats(winnerId, loserId, winnerSetsWon, loserSetsWon):
-    if checkIfWinnerIsLower(winnerId, loserId):
-        print("Winner is lower ranked than loser")
-        rankPlayerUp(winnerId)
-    increaseWinsLosses(winnerId, loserId) #Seems to work
-    updatePoints(winnerId, won=True)
-    updatePoints(loserId, won=False)
-    if winnerSetsWon and loserSetsWon:
-        changeSetStats(winnerId, winnerSetsWon, loserSetsWon)
-        changeSetStats(loserId, loserSetsWon, winnerSetsWon)
+# Import stat functions from playerStats module
+from playerStats import changeStats
 
 
 @app.route('/')
