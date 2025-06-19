@@ -39,10 +39,10 @@ class FinishedMatches(db.Model):
     challengerScore = db.Column(db.Integer, nullable=True)
     defenderScore = db.Column(db.Integer, nullable=True)
 
-def checkIfWinnerIsLower(winnerId, looserId):
+def checkIfWinnerIsLower(winnerId, loserId):
     winner = db.session.get(Players, winnerId)
-    looser = db.session.get(Players, looserId)
-    if winner.ranking < looser.ranking:
+    loser = db.session.get(Players, loserId)
+    if winner.ranking > loser.ranking:
         return True
     else:
         return False
@@ -51,14 +51,25 @@ def rankPlayerUp(playerId): #Ranks given Player one higher and deranks other Pla
     player = db.session.get(Players, playerId)
     currentRanking = player.ranking
     if currentRanking == 1: #Stops if Player is already highest ranking
+        print("Player is already highest Ranking")
         return
-    newRanking = currentRanking + 1
-    player.lastRanking = currentRanking #Update Players last Ranking to the currentRanking before updating
-    player.ranking = newRanking
+    newRanking = currentRanking - 1  # Fix: ranking should decrease (1 is better than 2)
+    print(f"currentRanking: {currentRanking}, newRanking: {newRanking}")
+    
+    # Find the other player BEFORE making any changes
     otherPlayer = Players.query.filter_by(ranking=newRanking).first()
-    otherPlayer.lastRanking = otherPlayer.ranking #Update otherPlayers last Ranking to current Ranking before updating ranking
+    if not otherPlayer:
+        print("otherPlayer doesnt exist/couldnt be found")
+        return
+    
+    # Update both players' lastRanking before swapping
+    player.lastRanking = currentRanking
+    otherPlayer.lastRanking = otherPlayer.ranking
+    
+    # Swap rankings
+    player.ranking = newRanking
     otherPlayer.ranking = currentRanking
-
+    
     db.session.commit()
 
 def getMatchesPlayed(playerId):
@@ -67,11 +78,11 @@ def getMatchesPlayed(playerId):
     losses = player.losses
     return wins + losses
 
-def increaseWinsLosses(winnerId, looserId):
+def increaseWinsLosses(winnerId, loserId):
     winner = db.session.get(Players, winnerId)
-    looser = db.session.get(Players, looserId)
+    loser = db.session.get(Players, loserId)
     winner.wins = winner.wins + 1
-    looser.wins = looser.wins + 1
+    loser.losses = loser.losses + 1  # Fix: should increase losses, not wins
     db.session.commit()
 
 def updatePoints(playerId, won):
@@ -88,15 +99,16 @@ def changeSetStats(playerId, wonSets, lostSets):
     player.setsLost = player.setsLost + lostSets
     db.session.commit()
 
-def changeStats(winnerId, looserId, winnerSetsWon, looserSetsWon):
-    if checkIfWinnerIsLower(winnerId, looserId):
+def changeStats(winnerId, loserId, winnerSetsWon, loserSetsWon):
+    if checkIfWinnerIsLower(winnerId, loserId):
+        print("Winner is lower ranked than loser")
         rankPlayerUp(winnerId)
-    increaseWinsLosses(winnerId, looserId)
+    increaseWinsLosses(winnerId, loserId) #Seems to work
     updatePoints(winnerId, won=True)
-    updatePoints(looserId, won=False)
-    if winnerSetsWon and looserSetsWon:
-        changeSetStats(winnerId, winnerSetsWon, looserSetsWon)
-        changeSetStats(looserId, looserSetsWon, winnerSetsWon)
+    updatePoints(loserId, won=False)
+    if winnerSetsWon and loserSetsWon:
+        changeSetStats(winnerId, winnerSetsWon, loserSetsWon)
+        changeSetStats(loserId, loserSetsWon, winnerSetsWon)
 
 
 @app.route('/')
@@ -134,34 +146,49 @@ def start_match():
 
 @app.route('/trainer/finish_match', methods=['POST'])
 def finish_match():
-    matchId = request.form.get('match_id')
+    print("got finish_match Form")
+    matchId = int(request.form.get('match_id'))
     match = db.session.get(OnGoingMatches, matchId)
     challenger = db.session.get(Players, match.challengerId)
     defender = db.session.get(Players, match.defenderId)
-    if request.form.get('challenger_score') and request.form.get('defender_score'): #Sets Looser and Winner | check if Score was provided
-        challengerScore = request.form.get('challenger_score')
-        defenderScore = request.form.get('defender_score')
+    
+    # Initialize variables
+    challengerScore = None
+    defenderScore = None
+    winnerSetsWon = None
+    loserSetsWon = None
+    
+    if request.form.get('challenger_score') and request.form.get('defender_score'): #Sets loser and Winner | check if Score was provided
+        print("score was submitted")
+        challengerScore = int(request.form.get('challenger_score'))
+        defenderScore = int(request.form.get('defender_score'))
         if challengerScore > defenderScore: #decide based on score who won | challengers score is higher = challenger won
             winner = challenger.name
             winnerId = challenger.id
             winnerSetsWon = challengerScore
-            looserSetsWon = defenderScore
-            looserId = defender.id
+            loserSetsWon = defenderScore
+            loserId = defender.id
         elif defenderScore > challengerScore: #defender Won
             winner = defender.name
             winnerId = defender.id 
             winnerSetsWon = defenderScore
-            looserSetsWon = challengerScore
-            looserId = challenger.id
+            loserSetsWon = challengerScore
+            loserId = challenger.id
     else: #alternative logic if only who won is provided
-        winnerId = request.form.get('winnerId')
-        if winnerId == challenger.id: 
+        print("no score submitted")
+        winnerId = request.form.get('winner_id')
+        if winnerId == "" or not winnerId:
+            return redirect('/trainer') #WIP: Error message: Winner couldnt be decided/wasnt transmitted, ties arent allowed
+        winnerId = int(winnerId)
+        if winnerId == challenger.id:
+            print("challengerWon")
             winner = challenger.name
-            looserId = defender.id
+            loserId = defender.id
         else:
             winner = defender.name
-            looserId = challenger.id
+            loserId = challenger.id
     if not winner or not winnerId:
+        print("Error couldnt get winner or winnerId")
         return redirect('/trainer') #WIP: Error message: Winner couldnt be decided/wasnt transmitted, ties arent allowed
 
     new_finishedmatch = FinishedMatches(
@@ -177,10 +204,14 @@ def finish_match():
         defenderScore = defenderScore if challengerScore and defenderScore else None
     )
 
+    print(f"Match finished: {challenger.name} vs {defender.name}")
+    print(f"Winner: {winner} (ID: {winnerId})")
+    print(f"Scores - Challenger: {challengerScore if 'challengerScore' in locals() else 'N/A'}, Defender: {defenderScore if 'defenderScore' in locals() else 'N/A'}")
+
     try:
-        changeStats(winnerId=winnerId, looserId=looserId, winnerSetsWon=winnerSetsWon, looserSetsWon=looserSetsWon)
-        db.session.add(new_finishedmatch)
-        db.session.delete(match)
+        changeStats(winnerId=winnerId, loserId=loserId, winnerSetsWon=winnerSetsWon, loserSetsWon=loserSetsWon)
+        db.session.add(new_finishedmatch) #Works
+        db.session.delete(match) #Works
         db.session.commit()
         return redirect('/trainer')
     except:
@@ -207,6 +238,7 @@ def player_add():
                 name=name,
                 wins=0,
                 losses=0,
+                points=0,
                 setsWon=0,
                 setsLost=0
             )

@@ -18,7 +18,7 @@
                         <input type="text" 
                             class="form-control" 
                             placeholder="Choose a player..." 
-                            list="list-timezone" 
+                            list="list-defender" 
                             id="input-datalist"
                             autocomplete="off"
                             required>
@@ -50,11 +50,42 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="finishMatchModalContent">
-                <p>Modal content placeholder</p>
+                <form method="post" action="/trainer/finish_match">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="inputChallengerSetsWon" class="form-label">Challenger Name</label>
+                            <input type="number" class="form-control" placeholder="Challenger sets won" aria-label="Challenger sets won" id="inputChallengerSetsWon" name="challenger_score">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="inputDefenderSetsWon" class="form-label">Defender Name</label>
+                            <input type="number" class="form-control" placeholder="Defender sets won" aria-label="Defender sets won" id="inputDefenderSetsWon" name="defender_score">
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="challengerWonCheckbox">
+                                <label class="form-check-label" for="challengerWonCheckbox">
+                                    Challenger Won
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="defenderWonCheckbox">
+                                <label class="form-check-label" for="defenderWonCheckbox">
+                                    Defender Won
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="match-id" name="match_id">
+                    <input type="hidden" id="winner-id" name="winner_id">
+                </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="startSpinner('finishMatchModalContent')">Finish Match</button>
+                <button type="button" class="btn btn-primary">Finish Match</button>
             </div>
         </div>
     </div>
@@ -77,13 +108,13 @@
                     </thead>
                     <tbody>
                         {% for player in players %}
-                        <tr class="player-row" data-player-id="{{ player.ranking }}" data-player-name="{{ player.name }}">
+                        <tr class="player-row" data-player-id="{{ player.id }}" data-player-name="{{ player.name }}">
                             <td><strong>{{ player.ranking }}</strong></td>
                             <td>{{ player.name }}</td>
                             <td>{{ player.wins }}</td>
                             <td>{{ player.losses }}</td>
                         </tr>
-                        <tr class="expand-row" id="expand-{{ player.ranking }}" style="display:none;">
+                        <tr class="expand-row" id="expand-{{ player.id }}" style="display:none;">
                             <td colspan="4">
                                 <div class="d-flex gap-2 justify-content-center flex-wrap">
                                     <button type="button" class="btn btn-primary btn-sm challenge-btn" 
@@ -131,7 +162,14 @@
                                             </div>
                                         </div>
                                         <p class="text-muted mb-2">Since: {{ activeMatches[0].timeStarted.strftime('%H:%M') }}</p>
-                                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#finishMatchModal">
+                                        <button type="button" class="btn btn-primary btn-sm" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#finishMatchModal"
+                                                data-match-id="{{ activeMatches[0].id }}"
+                                                data-challenger-name="{{ activeMatches[0].challenger }}"
+                                                data-defender-name="{{ activeMatches[0].defender }}"
+                                                data-challenger-id="{{ activeMatches[0].challengerId }}"
+                                                data-defender-id="{{ activeMatches[0].defenderId }}">
                                             Finish Match
                                         </button>
                                     </div>
@@ -151,7 +189,14 @@
                                                 </div>
                                             </div>
                                             <p class="text-muted mb-2">Since: {{ match.timeStarted.strftime('%H:%M') }}</p>
-                                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#finishMatchModal">
+                                            <button type="button" class="btn btn-primary btn-sm" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#finishMatchModal"
+                                                    data-match-id="{{ match.id }}"
+                                                    data-challenger-name="{{ match.challenger }}"
+                                                    data-defender-name="{{ match.defender }}"
+                                                    data-challenger-id="{{ match.challengerId }}"
+                                                    data-defender-id="{{ match.defenderId }}">
                                                 Finish Match
                                             </button>
                                         </div>

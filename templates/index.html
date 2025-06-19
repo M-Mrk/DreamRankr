@@ -9,6 +9,7 @@
             <tr>
                 <th>Ranking</th>
                 <th>Spieler</th>
+                <th>Points</th>
                 <th>Siege</th>
                 <th>Verluste</th>
                 <th>Gewinn %</th>
@@ -21,6 +22,7 @@
             <tr>
                 <td><strong>{{ player.ranking }}</strong></td>
                 <td>{{ player.name }}</td>
+                <td>{{ player.points }}</td>
                 <td>{{ player.wins }}</td>
                 <td>{{ player.losses }}</td>
                 <td>{% if player.wins %}
