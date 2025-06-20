@@ -1,34 +1,4 @@
 /**
- * Opens a modal by setting its display style to block
- * @param {string} modalId - The ID of the modal element to open
- */
-function openModal(modalId) {
-  modal = document.getElementById(modalId);
-  if (modal) {
-    modal.style.display = "block";
-  }
-}
-
-/**
- * Closes a modal by setting its display style to none
- * @param {string} modalId - The ID of the modal element to close
- */
-function closeModal(modalId) {
-  modal = document.getElementById(modalId);
-  if (modal) {
-    modal.style.display = "none";
-  }
-}
-
-/**
- * Opens the challenge window modal for a specific player
- * @param {string} playerId - The ID of the player initiating the challenge
- */
-function openChallengeWindow(playerId) {
-  openModal("challengeWindow");
-}
-
-/**
  * Toggles the visibility of an expand row for a specific player
  * Closes all other expanded rows before showing the selected one
  * @param {string} playerId - The ID of the player whose expand row should be toggled
@@ -207,12 +177,6 @@ function initializeChallengeSystem() {
         return;
       }
 
-      console.log("Challenge:", {
-        challenger_id: challengerId,
-        defender_id: defenderId,
-        challenged_player_name: challengedPlayer,
-      });
-
       // Submit the form with validated data
       challengeForm.submit();
     });
@@ -242,7 +206,6 @@ function initializeFinishMatchModal() {
     !matchIdInput ||
     !winnerIdInput
   ) {
-    console.log("Some elements not found for finish match modal");
     return;
   }
 
@@ -416,15 +379,6 @@ function initializeFinishMatchModal() {
         const hasSets = challengerSets !== "" && defenderSets !== "";
         const hasWinner = challengerWon || defenderWon;
 
-        console.log("Form validation:", {
-          hasSets,
-          hasWinner,
-          challengerSets,
-          defenderSets,
-          challengerWon,
-          defenderWon,
-        }); // Debug log
-
         if (!hasSets && !hasWinner) {
           alert(
             "Please either enter the sets won by each player or select a winner."
@@ -437,22 +391,12 @@ function initializeFinishMatchModal() {
           return;
         }
 
-        console.log("Validation passed, submitting form"); // Debug log
-        console.log("Form data:", {
-          match_id: matchIdInput.value,
-          winner_id: winnerIdInput.value,
-          challenger_score: challengerSetsInput.value,
-          defender_score: defenderSetsInput.value,
-        }); // Debug log
-
         // Submit the form first
         finishMatchForm.submit();
 
         // Optionally, show spinner after a short delay if you want
         // setTimeout(() => startSpinner("finishMatchModalContent"), 100);
       });
-    } else {
-      console.log("Finish match button or form not found");
     }
   }
 }
@@ -520,58 +464,35 @@ function applyDisplaySettings(settings) {
   const container = document.querySelector(".activeMatches");
   if (!container) return;
 
-  // Remove existing classes
   container.className = "activeMatches";
-
-  // Add new display mode class
   container.classList.add(`display-${settings.displayMode}`);
 
-  // Handle carousel functionality for non-carousel modes
   const carousel = container.querySelector("#activeMatchesCarousel");
   if (carousel) {
     const carouselInstance = bootstrap.Carousel.getInstance(carousel);
 
     if (settings.displayMode !== "carousel") {
-      // Stop carousel cycling and show all items
-      if (carouselInstance) {
-        carouselInstance.dispose();
-      }
-
-      // Make all carousel items visible
-      const carouselItems = carousel.querySelectorAll(".carousel-item");
-      carouselItems.forEach((item) => {
+      // Dispose carousel and show all items
+      carouselInstance?.dispose();
+      carousel.querySelectorAll(".carousel-item").forEach((item) => {
         item.classList.add("active");
       });
     } else {
-      // Re-initialize carousel for carousel mode
-      const carouselItems = carousel.querySelectorAll(".carousel-item");
-      carouselItems.forEach((item, index) => {
-        if (index === 0) {
-          item.classList.add("active");
-        } else {
-          item.classList.remove("active");
-        }
+      // Reset and reinitialize carousel
+      carousel.querySelectorAll(".carousel-item").forEach((item, index) => {
+        item.classList.toggle("active", index === 0);
       });
 
-      // Reinitialize carousel
-      new bootstrap.Carousel(carousel, {
-        interval: false,
-        wrap: true,
-      });
+      // Only create if not already exists
+      if (!carouselInstance) {
+        new bootstrap.Carousel(carousel, { interval: false, wrap: true });
+      }
     }
   }
 
-  // Handle time display
-  if (settings.showElapsed) {
-    updateTimeDisplay(true);
-  }
-
-  // Handle auto-refresh
-  if (settings.autoRefresh) {
-    startAutoRefresh();
-  } else {
-    stopAutoRefresh();
-  }
+  // Handle other settings
+  if (settings.showElapsed) updateTimeDisplay(true);
+  settings.autoRefresh ? startAutoRefresh() : stopAutoRefresh();
 }
 
 /**
@@ -641,40 +562,6 @@ function calculateElapsedFromTimestamp(startTimestamp) {
 }
 
 /**
- * Calculate elapsed time from start time (legacy function for backward compatibility)
- */
-function calculateElapsed(startTime) {
-  const now = new Date();
-
-  // Parse the start time from the template (which is already converted to local time by Jinja2)
-  const [hours, minutes] = startTime.split(":").map(Number);
-  const start = new Date();
-  start.setHours(hours, minutes, 0, 0);
-
-  // Handle case where the match started yesterday but we're now in a new day
-  if (start > now) {
-    start.setDate(start.getDate() - 1);
-  }
-
-  const diffMs = now - start;
-  const diffMins = Math.floor(diffMs / 60000);
-
-  // Ensure we don't show negative times
-  if (diffMins < 0) {
-    return "0m";
-  }
-
-  if (diffMins < 60) {
-    return `${diffMins}m`;
-  }
-
-  const elapsedHours = Math.floor(diffMins / 60);
-  const remainingMins = diffMins % 60;
-
-  return `${elapsedHours}h ${remainingMins}m`;
-}
-
-/**
  * Start auto-refresh interval
  */
 function startAutoRefresh() {
@@ -698,17 +585,10 @@ function stopAutoRefresh() {
 }
 
 /**
- * Show Bootstrap toast notification
+ * Show Bootstrap toast notification - simplified version
  */
 function showToast(message, type = "primary") {
-  const toastHtml = `
-        <div class="toast align-items-center text-white bg-${type}" role="alert">
-            <div class="d-flex">
-                <div class="toast-body">${message}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        </div>`;
-
+  // Create toast container if it doesn't exist
   let container = document.querySelector(".toast-container");
   if (!container) {
     container = document.createElement("div");
@@ -716,9 +596,19 @@ function showToast(message, type = "primary") {
     document.body.appendChild(container);
   }
 
-  container.insertAdjacentHTML("beforeend", toastHtml);
-  const toast = container.lastElementChild;
-  new bootstrap.Toast(toast, { delay: 3000 }).show();
+  // Create and show toast
+  const toast = document.createElement("div");
+  toast.className = `toast align-items-center text-white bg-${type}`;
+  toast.setAttribute("role", "alert");
+  toast.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">${message}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>`;
+
+  container.appendChild(toast);
+  const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+  bsToast.show();
 
   toast.addEventListener("hidden.bs.toast", () => toast.remove());
 }
@@ -727,64 +617,24 @@ function showToast(message, type = "primary") {
 document.addEventListener("DOMContentLoaded", function () {
   // Set up click handlers for player table rows
   const playerRows = document.querySelectorAll(".player-row");
-
   playerRows.forEach((row) => {
     row.addEventListener("click", function () {
       const playerId = this.getAttribute("data-player-id");
       toggleExpandRow(playerId);
     });
-
-    // Apply cursor pointer styling to indicate clickable rows
     row.style.cursor = "pointer";
   });
 
-  // Handle challenge modal show event to update modal content
-  const challengeModal = document.getElementById("challengeWindow");
-  if (challengeModal) {
-    challengeModal.addEventListener("show.bs.modal", function (event) {
-      // Extract data from triggering button
-      const button = event.relatedTarget;
-      const playerId = button.getAttribute("data-player-id");
-      const playerName = button.getAttribute("data-player-name");
-
-      // Update modal label with player information
-      const modalInputLabel = document.getElementById(
-        "challengeWIndowInputLabel"
-      );
-      if (modalInputLabel) {
-        modalInputLabel.textContent = `${playerName} challenges the following:`;
-      }
-
-      // Store player ID for form processing
-      this.setAttribute("data-current-player-id", playerId);
-    });
-  }
-
-  // Initialize trainer page specific functionality
+  // Initialize all functionality
   initializeChallengeSystem();
   initializeFinishMatchModal();
   initializeActiveMatchesSettings();
-});
 
-// Secondary DOM ready handler for challenge modal label updates
-document.addEventListener("DOMContentLoaded", function () {
-  const challengeModal = document.getElementById("challengeWindow");
-  const challengeLabel = document.getElementById("challengeWindowInputLabel");
-
-  challengeModal.addEventListener("show.bs.modal", function (event) {
-    const button = event.relatedTarget; // Button that triggered the modal
-    const playerName = button.getAttribute("data-player-name");
-
-    // Update the label text with challenger name
-    challengeLabel.textContent = `${playerName} challenges who?`;
+  // Initialize Bootstrap tooltips if any exist
+  const tooltipTriggerList = [].slice.call(
+    document.querySelectorAll('[data-bs-toggle="tooltip"]')
+  );
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
   });
 });
-
-// Placeholder for jQuery autocomplete functionality
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
-    // $("#input-datalist").autocomplete(); only works with jQuery
-  },
-  false
-);

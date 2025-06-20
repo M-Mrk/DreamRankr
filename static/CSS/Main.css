@@ -53,3 +53,9 @@
 .toast-container {
     z-index: 1055;
 }
+
+/* Dark carousel arrows */
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    filter: invert(1);
+}
