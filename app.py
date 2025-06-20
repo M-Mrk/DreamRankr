@@ -161,6 +161,63 @@ def player_add():
                 log(4, "player_add", f"New player: {name} couldnt be added, because of {e}")
     return redirect('/trainer')
 
+def checkIfChangedAndUpdate(formId, player, playerArgument, argumentName):
+    formArgument = request.form.get(formId)
+    if formArgument and not formArgument == playerArgument:
+        print("Ding")
+        oldArgument = getattr(player, argumentName)
+        setattr(player, argumentName, formArgument)
+        try:
+            db.session.commit()
+        except Exception as e:
+            log(4, "player_edit", f"Could not change {argumentName} for {player.name}({player.id}) from {oldArgument} to {formArgument}, because of {e}")
+        log(1, "player_edit", f"Changed {player.name}({player.id}) {argumentName} from {oldArgument} to {formArgument}")
+
+@app.route('/trainer/player_edit', methods=['POST'])
+def player_edit():
+    playerId = request.form.get('player_id')
+    if not playerId:
+        log(3, "player_edit", f"Could not edit player because the submitted Id was empty")
+        return redirect('/trainer') #WIP: Add error message
+
+    try:
+        player = db.session.get(Players, playerId)
+    except Exception as e:
+        log(4, "player_edit", f"Could not get Player from playerId: {playerId}, because of {e}")
+        return redirect('/trainer') #WIP: Add error message
+    
+    dbArguments = ["ranking", "name", "wins", "losses", "setsWon", "setsLost"]
+    formArguments = ['ranking', 'name', 'wins', 'losses', 'sets_won', 'sets_lost']
+
+    for i in range(len(dbArguments)):
+        checkIfChangedAndUpdate(formArguments[i], player, player.name, dbArguments[i])
+
+    return redirect('/trainer')
+
+    
+
+@app.route('/trainer/player_delete', methods=['POST'])
+def player_delete():
+    playerId = request.form.get('player_id')
+    if not playerId:
+        log(3, "player_delete", f"Could not delete player because the submitted Id was empty")
+        return redirect('/trainer') #WIP: Add error message
+    
+    try:
+        player = db.session.get(Players, playerId)
+    except Exception as e:
+        log(4, "player_delete", f"Could not get Player from playerId: {playerId}, because of {e}")
+        return redirect('/trainer') #WIP: Add error message
+    
+    try:
+        db.session.delete(player)
+        db.session.commit()
+    except Exception as e:
+        log(4, "player_delete", f"Could not delete Player {player.name}({playerId}), because of {e}")
+        return redirect('/trainer') #WIP: Add error message
+    
+    log(1, "player_delete", f"Deleted Player {player.name}({playerId})")
+    return redirect('/trainer')
 
 if __name__ == '__main__':
     with app.app_context():

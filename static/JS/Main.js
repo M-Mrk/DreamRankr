@@ -394,11 +394,242 @@ function initializeFinishMatchModal() {
         // Submit the form first
         finishMatchForm.submit();
 
-        // Optionally, show spinner after a short delay if you want
-        // setTimeout(() => startSpinner("finishMatchModalContent"), 100);
       });
     }
   }
+}
+
+/**
+ * Initializes the edit player modal functionality
+ * Populates form fields with current player data and handles form submission
+ */
+function initializeEditPlayerModal() {
+  const editModal = document.getElementById("editPlayerModal");
+  const editForm = document.getElementById("editPlayerForm");
+  const saveBtn = document.getElementById("savePlayerBtn");
+  const deleteBtn = document.getElementById("deletePlayerBtn");
+  const deleteConfirmationModal = document.getElementById(
+    "deleteConfirmationModal"
+  );
+  const confirmDeleteBtn = document.getElementById("confirmDeletePlayer");
+  const deletePlayerNameConfirm = document.getElementById(
+    "deletePlayerNameConfirm"
+  );
+
+  // Get toggle elements
+  const changeRankingToggle = document.getElementById("changeRankingToggle");
+  const changeWinsLossesToggle = document.getElementById(
+    "changeWinsLossesToggle"
+  );
+  const changeSetsToggle = document.getElementById("changeSetsToggle");
+
+  const rankingSection = document.getElementById("rankingSection");
+  const winsLossesSection = document.getElementById("winsLossesSection");
+  const setsSection = document.getElementById("setsSection");
+
+  if (!editModal || !editForm || !saveBtn || !deleteBtn) {
+    return; // Not on trainer page
+  }
+
+  // Handle toggle switches
+  if (changeRankingToggle && rankingSection) {
+    changeRankingToggle.addEventListener("change", function () {
+      if (this.checked) {
+        rankingSection.style.display = "block";
+        document.getElementById("editPlayerRanking").required = true;
+      } else {
+        rankingSection.style.display = "none";
+        document.getElementById("editPlayerRanking").required = false;
+        document.getElementById("editPlayerRanking").value = "";
+      }
+    });
+  }
+
+  if (changeWinsLossesToggle && winsLossesSection) {
+    changeWinsLossesToggle.addEventListener("change", function () {
+      if (this.checked) {
+        winsLossesSection.style.display = "block";
+        document.getElementById("editPlayerWins").required = true;
+        document.getElementById("editPlayerLosses").required = true;
+      } else {
+        winsLossesSection.style.display = "none";
+        document.getElementById("editPlayerWins").required = false;
+        document.getElementById("editPlayerLosses").required = false;
+        document.getElementById("editPlayerWins").value = "";
+        document.getElementById("editPlayerLosses").value = "";
+      }
+    });
+  }
+
+  if (changeSetsToggle && setsSection) {
+    changeSetsToggle.addEventListener("change", function () {
+      if (this.checked) {
+        setsSection.style.display = "block";
+        document.getElementById("editPlayerSetsWon").required = true;
+        document.getElementById("editPlayerSetsLost").required = true;
+      } else {
+        setsSection.style.display = "none";
+        document.getElementById("editPlayerSetsWon").required = false;
+        document.getElementById("editPlayerSetsLost").required = false;
+        document.getElementById("editPlayerSetsWon").value = "";
+        document.getElementById("editPlayerSetsLost").value = "";
+      }
+    });
+  }
+
+  // Populate modal when it's opened
+  editModal.addEventListener("show.bs.modal", function (event) {
+    const button = event.relatedTarget;
+
+    if (button) {
+      // Get player data from button attributes
+      const playerId = button.getAttribute("data-player-id");
+      const playerName = button.getAttribute("data-player-name");
+      const playerRanking = button.getAttribute("data-player-ranking");
+      const playerWins = button.getAttribute("data-player-wins");
+      const playerLosses = button.getAttribute("data-player-losses");
+      const playerSetsWon = button.getAttribute("data-player-sets-won");
+      const playerSetsLost = button.getAttribute("data-player-sets-lost");
+
+      // Populate form fields
+      document.getElementById("editPlayerId").value = playerId;
+      document.getElementById("editPlayerName").value = playerName;
+      document.getElementById("editPlayerRanking").value = playerRanking;
+      document.getElementById("editPlayerWins").value = playerWins;
+      document.getElementById("editPlayerLosses").value = playerLosses;
+      document.getElementById("editPlayerSetsWon").value = playerSetsWon;
+      document.getElementById("editPlayerSetsLost").value = playerSetsLost;
+
+      // Update modal title
+      document.getElementById(
+        "editPlayerModalLabel"
+      ).textContent = `Edit ${playerName}`;
+
+      // Reset toggles and hide sections
+      changeRankingToggle.checked = false;
+      changeWinsLossesToggle.checked = false;
+      changeSetsToggle.checked = false;
+
+      rankingSection.style.display = "none";
+      winsLossesSection.style.display = "none";
+      setsSection.style.display = "none";
+
+      // Remove required attributes when sections are hidden
+      document.getElementById("editPlayerRanking").required = false;
+      document.getElementById("editPlayerWins").required = false;
+      document.getElementById("editPlayerLosses").required = false;
+      document.getElementById("editPlayerSetsWon").required = false;
+      document.getElementById("editPlayerSetsLost").required = false;
+    }
+  });
+
+  // Handle save button click
+  saveBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+
+    // Only validate visible/enabled fields
+    const visibleInputs = editForm.querySelectorAll(
+      'input:not([type="hidden"]):not([style*="display: none"]) input[required]'
+    );
+    let isValid = true;
+
+    // Custom validation for visible required fields
+    visibleInputs.forEach((input) => {
+      if (input.required && !input.value.trim()) {
+        isValid = false;
+        input.reportValidity();
+      }
+    });
+
+    if (!isValid) {
+      return;
+    }
+
+    // Submit form
+    editForm.submit();
+  });
+
+  // Handle delete button click - show confirmation modal
+  deleteBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+
+    const playerName = document.getElementById("editPlayerName").value;
+    const playerId = document.getElementById("editPlayerId").value;
+
+    // Update confirmation modal with player info
+    deletePlayerNameConfirm.textContent = playerName;
+
+    // Store player ID for the actual deletion
+    confirmDeleteBtn.setAttribute("data-player-id", playerId);
+    confirmDeleteBtn.setAttribute("data-player-name", playerName);
+
+    // Hide the edit modal and show confirmation modal
+    const editModalInstance = bootstrap.Modal.getInstance(editModal);
+    editModalInstance.hide();
+
+    // Show confirmation modal after edit modal is hidden
+    editModal.addEventListener("hidden.bs.modal", function showDeleteModal() {
+      const deleteModalInstance = new bootstrap.Modal(deleteConfirmationModal);
+      deleteModalInstance.show();
+      // Remove the event listener to prevent multiple attachments
+      editModal.removeEventListener("hidden.bs.modal", showDeleteModal);
+    });
+  });
+
+  // Handle actual deletion when confirmed
+  if (confirmDeleteBtn && deleteConfirmationModal) {
+    confirmDeleteBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      const playerId = this.getAttribute("data-player-id");
+      const playerName = this.getAttribute("data-player-name");
+
+      if (playerId) {
+        // Create a form for deletion
+        const deleteForm = document.createElement("form");
+        deleteForm.method = "post";
+        deleteForm.action = "/trainer/player_delete";
+
+        const playerIdInput = document.createElement("input");
+        playerIdInput.type = "hidden";
+        playerIdInput.name = "player_id";
+        playerIdInput.value = playerId;
+
+        deleteForm.appendChild(playerIdInput);
+        document.body.appendChild(deleteForm);
+
+        // Hide the confirmation modal
+        const deleteModalInstance = bootstrap.Modal.getInstance(
+          deleteConfirmationModal
+        );
+        deleteModalInstance.hide();
+
+        // Submit the form
+        deleteForm.submit();
+      }
+    });
+
+    // Clean up when delete confirmation modal is hidden
+    deleteConfirmationModal.addEventListener("hidden.bs.modal", function () {
+      confirmDeleteBtn.removeAttribute("data-player-id");
+      confirmDeleteBtn.removeAttribute("data-player-name");
+      deletePlayerNameConfirm.textContent = "";
+    });
+  }
+
+  // Reset form when edit modal is hidden
+  editModal.addEventListener("hidden.bs.modal", function () {
+    editForm.reset();
+    // Reset toggles
+    changeRankingToggle.checked = false;
+    changeWinsLossesToggle.checked = false;
+    changeSetsToggle.checked = false;
+
+    // Hide sections
+    rankingSection.style.display = "none";
+    winsLossesSection.style.display = "none";
+    setsSection.style.display = "none";
+  });
 }
 
 /**
@@ -629,6 +860,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initializeChallengeSystem();
   initializeFinishMatchModal();
   initializeActiveMatchesSettings();
+  initializeEditPlayerModal(); // Add this line
 
   // Initialize Bootstrap tooltips if any exist
   const tooltipTriggerList = [].slice.call(
