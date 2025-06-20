@@ -143,6 +143,14 @@
                 <div class="d-flex align-items-center mb-3">
                     <h4 class="mb-0 me-2">Active Challenges</h4>
                     <hr class="flex-grow-1">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" 
+                            data-bs-toggle="offcanvas" 
+                            data-bs-target="#activeMatchesSettings" 
+                            aria-controls="activeMatchesSettings"
+                            data-bs-toggle="tooltip" 
+                            title="Settings">
+                        <span class="material-icons" style="font-size: 16px;">settings</span>
+                    </button>
                 </div>
                 <div class="activeMatches">
                     {% if activeMatches %}
@@ -161,7 +169,9 @@
                                                 <h5>{{ activeMatches[0].defender }}</h5>
                                             </div>
                                         </div>
-                                        <p class="text-muted mb-2">Since: {{ activeMatches[0].timeStarted.strftime('%H:%M') }}</p>
+                                        <p class="text-muted mb-2" data-start-timestamp="{{ activeMatches[0].timeStarted.timestamp() }}">
+                                            Since: {{ activeMatches[0].timeStarted.strftime('%H:%M') }}
+                                        </p>
                                         <button type="button" class="btn btn-primary btn-sm" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#finishMatchModal"
@@ -188,7 +198,9 @@
                                                     <h5>{{ match.defender }}</h5>
                                                 </div>
                                             </div>
-                                            <p class="text-muted mb-2">Since: {{ match.timeStarted.strftime('%H:%M') }}</p>
+                                            <p class="text-muted mb-2" data-start-timestamp="{{ match.timeStarted.timestamp() }}">
+                                                Since: {{ match.timeStarted.strftime('%H:%M') }}
+                                            </p>
                                             <button type="button" class="btn btn-primary btn-sm" 
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#finishMatchModal"
@@ -236,6 +248,43 @@
                 </form>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Active Matches Settings Offcanvas -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="activeMatchesSettings" aria-labelledby="activeMatchesSettingsLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="activeMatchesSettingsLabel">Display Settings</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="mb-3">
+            <label for="displayMode" class="form-label">Display Mode</label>
+            <select class="form-select" id="displayMode">
+                <option value="carousel">Carousel</option>
+                <option value="grid">Grid View</option>
+            </select>
+        </div>
+        
+        <div class="mb-3">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="showElapsed">
+                <label class="form-check-label" for="showElapsed">
+                    Show elapsed time
+                </label>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="autoRefresh">
+                <label class="form-check-label" for="autoRefresh">
+                    Auto-refresh (30s)
+                </label>
+            </div>
+        </div>
+        
+        <button type="button" class="btn btn-primary w-100" id="applySettings">Apply Settings</button>
     </div>
 </div>
 {% endblock %}

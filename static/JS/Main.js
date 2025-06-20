@@ -468,6 +468,261 @@ function startSpinner(id) {
     '<div class="d-flex justify-content-center"> <div class="spinner-border" role="status"> <span class="visually-hidden">Loading...</span> </div> </div>';
 }
 
+/**
+ * Initialize active matches settings with Bootstrap Offcanvas
+ */
+function initializeActiveMatchesSettings() {
+  const offcanvas = document.getElementById("activeMatchesSettings");
+  const displayMode = document.getElementById("displayMode");
+  const showElapsed = document.getElementById("showElapsed");
+  const autoRefresh = document.getElementById("autoRefresh");
+  const applyBtn = document.getElementById("applySettings");
+
+  if (!offcanvas) return; // Not on trainer page
+
+  // Load saved settings
+  const settings = JSON.parse(
+    localStorage.getItem("activeMatchesSettings") ||
+      '{"displayMode":"carousel","showElapsed":false,"autoRefresh":false}'
+  );
+
+  // Apply saved settings to form
+  displayMode.value = settings.displayMode;
+  showElapsed.checked = settings.showElapsed;
+  autoRefresh.checked = settings.autoRefresh;
+
+  // Apply current settings to display
+  applyDisplaySettings(settings);
+
+  // Save and apply when button clicked
+  applyBtn.addEventListener("click", () => {
+    const newSettings = {
+      displayMode: displayMode.value,
+      showElapsed: showElapsed.checked,
+      autoRefresh: autoRefresh.checked,
+    };
+
+    localStorage.setItem("activeMatchesSettings", JSON.stringify(newSettings));
+    applyDisplaySettings(newSettings);
+
+    // Close offcanvas
+    bootstrap.Offcanvas.getInstance(offcanvas).hide();
+
+    // Show toast notification
+    showToast("Settings applied successfully!", "success");
+  });
+}
+
+/**
+ * Apply display settings to active matches
+ */
+function applyDisplaySettings(settings) {
+  const container = document.querySelector(".activeMatches");
+  if (!container) return;
+
+  // Remove existing classes
+  container.className = "activeMatches";
+
+  // Add new display mode class
+  container.classList.add(`display-${settings.displayMode}`);
+
+  // Handle carousel functionality for non-carousel modes
+  const carousel = container.querySelector("#activeMatchesCarousel");
+  if (carousel) {
+    const carouselInstance = bootstrap.Carousel.getInstance(carousel);
+
+    if (settings.displayMode !== "carousel") {
+      // Stop carousel cycling and show all items
+      if (carouselInstance) {
+        carouselInstance.dispose();
+      }
+
+      // Make all carousel items visible
+      const carouselItems = carousel.querySelectorAll(".carousel-item");
+      carouselItems.forEach((item) => {
+        item.classList.add("active");
+      });
+    } else {
+      // Re-initialize carousel for carousel mode
+      const carouselItems = carousel.querySelectorAll(".carousel-item");
+      carouselItems.forEach((item, index) => {
+        if (index === 0) {
+          item.classList.add("active");
+        } else {
+          item.classList.remove("active");
+        }
+      });
+
+      // Reinitialize carousel
+      new bootstrap.Carousel(carousel, {
+        interval: false,
+        wrap: true,
+      });
+    }
+  }
+
+  // Handle time display
+  if (settings.showElapsed) {
+    updateTimeDisplay(true);
+  }
+
+  // Handle auto-refresh
+  if (settings.autoRefresh) {
+    startAutoRefresh();
+  } else {
+    stopAutoRefresh();
+  }
+}
+
+/**
+ * Update time display between elapsed and start time
+ */
+function updateTimeDisplay(showElapsed) {
+  const timeElements = document.querySelectorAll(".activeMatches .text-muted");
+  timeElements.forEach((el) => {
+    const startTimestamp = el.getAttribute("data-start-timestamp");
+
+    if (showElapsed && el.textContent.includes("Since:") && startTimestamp) {
+      const elapsed = calculateElapsedFromTimestamp(parseFloat(startTimestamp));
+      const originalText = el.textContent;
+      el.textContent = `Elapsed: ${elapsed}`;
+      // Store original text for restoration
+      el.setAttribute("data-original-text", originalText);
+    } else if (!showElapsed && el.textContent.includes("Elapsed:")) {
+      // Restore original text if available
+      const originalText = el.getAttribute("data-original-text");
+      if (originalText) {
+        el.textContent = originalText;
+      } else {
+        // Fallback - reconstruct from timestamp
+        if (startTimestamp) {
+          const startDate = new Date(parseFloat(startTimestamp) * 1000);
+          const timeStr = startDate.toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          el.textContent = `Since: ${timeStr}`;
+        }
+      }
+    }
+  });
+}
+
+/**
+ * Calculate elapsed time from Unix timestamp (UTC)
+ * @param {number} startTimestamp - Unix timestamp in seconds (UTC)
+ * @returns {string} Formatted elapsed time string
+ */
+function calculateElapsedFromTimestamp(startTimestamp) {
+  const now = new Date();
+  const start = new Date(startTimestamp * 1000); // Convert to milliseconds
+
+  // Adjust the start time to the local timezone
+  const timezoneOffsetMs = now.getTimezoneOffset() * 60000; // Convert minutes to milliseconds
+  const localStart = new Date(start.getTime() - timezoneOffsetMs);
+
+  // Calculate the difference in milliseconds
+  const diffMs = now - localStart;
+  const diffMins = Math.floor(diffMs / 60000);
+
+  // Ensure we don't show negative times
+  if (diffMins < 0) {
+    return "0m";
+  }
+
+  if (diffMins < 60) {
+    return `${diffMins}m`;
+  }
+
+  const hours = Math.floor(diffMins / 60);
+  const remainingMins = diffMins % 60;
+
+  return `${hours}h ${remainingMins}m`;
+}
+
+/**
+ * Calculate elapsed time from start time (legacy function for backward compatibility)
+ */
+function calculateElapsed(startTime) {
+  const now = new Date();
+
+  // Parse the start time from the template (which is already converted to local time by Jinja2)
+  const [hours, minutes] = startTime.split(":").map(Number);
+  const start = new Date();
+  start.setHours(hours, minutes, 0, 0);
+
+  // Handle case where the match started yesterday but we're now in a new day
+  if (start > now) {
+    start.setDate(start.getDate() - 1);
+  }
+
+  const diffMs = now - start;
+  const diffMins = Math.floor(diffMs / 60000);
+
+  // Ensure we don't show negative times
+  if (diffMins < 0) {
+    return "0m";
+  }
+
+  if (diffMins < 60) {
+    return `${diffMins}m`;
+  }
+
+  const elapsedHours = Math.floor(diffMins / 60);
+  const remainingMins = diffMins % 60;
+
+  return `${elapsedHours}h ${remainingMins}m`;
+}
+
+/**
+ * Start auto-refresh interval
+ */
+function startAutoRefresh() {
+  stopAutoRefresh(); // Clear existing
+  window.matchesRefreshInterval = setInterval(() => {
+    const settings = JSON.parse(
+      localStorage.getItem("activeMatchesSettings") || "{}"
+    );
+    if (settings.showElapsed) updateTimeDisplay(true);
+  }, 30000);
+}
+
+/**
+ * Stop auto-refresh interval
+ */
+function stopAutoRefresh() {
+  if (window.matchesRefreshInterval) {
+    clearInterval(window.matchesRefreshInterval);
+    window.matchesRefreshInterval = null;
+  }
+}
+
+/**
+ * Show Bootstrap toast notification
+ */
+function showToast(message, type = "primary") {
+  const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type}" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>`;
+
+  let container = document.querySelector(".toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.className = "toast-container position-fixed top-0 end-0 p-3";
+    document.body.appendChild(container);
+  }
+
+  container.insertAdjacentHTML("beforeend", toastHtml);
+  const toast = container.lastElementChild;
+  new bootstrap.Toast(toast, { delay: 3000 }).show();
+
+  toast.addEventListener("hidden.bs.toast", () => toast.remove());
+}
+
 // Initialize all functionality when DOM is fully loaded
 document.addEventListener("DOMContentLoaded", function () {
   // Set up click handlers for player table rows
@@ -508,6 +763,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initialize trainer page specific functionality
   initializeChallengeSystem();
   initializeFinishMatchModal();
+  initializeActiveMatchesSettings();
 });
 
 // Secondary DOM ready handler for challenge modal label updates

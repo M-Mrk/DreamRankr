@@ -25,3 +25,31 @@
 .expand-row {
     background-color: #f8f9fa;
 }
+
+/* Active Matches Display Modes - Grid only */
+.activeMatches.display-grid .carousel-inner {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.activeMatches.display-grid .carousel-item {
+    display: block !important;
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+.activeMatches.display-grid .carousel-item.active {
+    display: block !important;
+}
+
+/* Hide carousel controls in non-carousel modes */
+.activeMatches:not(.display-carousel) .carousel-control-prev,
+.activeMatches:not(.display-carousel) .carousel-control-next {
+    display: none !important;
+}
+
+/* Toast container positioning */
+.toast-container {
+    z-index: 1055;
+}
