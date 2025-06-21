@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect
 from flask_migrate import Migrate
 from db import db, Players, OnGoingMatches, FinishedMatches
 from logger import log
-from datetime import datetime
+from datetime import datetime, timezone
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Main.db'
@@ -15,7 +15,7 @@ migrate = Migrate(app, db)
 from playerStats import changeStats
 
 # Add this after creating your Flask app
-app.jinja_env.globals['now'] = datetime.utcnow
+app.jinja_env.globals['now'] = datetime.now(datetime.timezone.utc)
 
 @app.route('/')
 def home():
