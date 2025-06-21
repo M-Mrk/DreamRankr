@@ -15,19 +15,19 @@ class Players(db.Model): #Actual list of Players
     lastRanking = db.Column(db.Integer, nullable=True) #To indicate changes in the rankings
     lastRankingChanged = db.Column(db.DateTime, nullable=True) #When the ranking change occurred
 
-class Rankings(db.Model): #List of all currently ongoing Rankings
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50))
+# class Rankings(db.Model): #List of all currently ongoing Rankings
+#     id = db.Column(db.Integer, primary_key=True)
+#     name = db.Column(db.String(50))
 
-class PlayerRankings(db.Model): #Table with one row per player per ranking - tracks each player's position and points in different rankings
-    id = db.Column(db.Integer, primary_key=True)
-    playerId = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
-    rankingId = db.Column(db.Integer, db.ForeignKey('rankings.id'), nullable=False)
-    ranking = db.Column(db.Integer, nullable=False)
-    lastRanking = db.Column(db.Integer, nullable=True) #To indicate changes in the rankings
-    lastRankingChanged = db.Column(db.DateTime, nullable=True) #When the ranking change occurred
-    points = db.Column(db.Integer, nullable=False)
-    __table_args__ = (db.UniqueConstraint('playerId', 'rankingId'))
+# class PlayerRankings(db.Model): #Table with one row per player per ranking - tracks each player's position and points in different rankings
+#     id = db.Column(db.Integer, primary_key=True)
+#     playerId = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
+#     rankingId = db.Column(db.Integer, db.ForeignKey('rankings.id'), nullable=False)
+#     ranking = db.Column(db.Integer, nullable=False)
+#     lastRanking = db.Column(db.Integer, nullable=True) #To indicate changes in the rankings
+#     lastRankingChanged = db.Column(db.DateTime, nullable=True) #When the ranking change occurred
+#     points = db.Column(db.Integer, nullable=False)
+#     __table_args__ = (db.UniqueConstraint('playerId', 'rankingId'))
 
 class OnGoingMatches(db.Model): #List of all curent matches
     id = db.Column(db.Integer, primary_key=True)

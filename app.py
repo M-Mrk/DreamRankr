@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect
 from flask_migrate import Migrate
-from db import db, Players, OnGoingMatches, FinishedMatches, PlayerRankings
+from db import db, Players, OnGoingMatches, FinishedMatches#, PlayerRankings
 from logger import log
 from datetime import datetime, timezone
 
@@ -17,8 +17,8 @@ from playerStats import changeStats
 # Add this after creating your Flask app
 app.jinja_env.globals['now'] = datetime.now(datetime.timezone.utc)
 
-def getRankingObj(playerId, rankingId):
-    return PlayerRankings.query.filter_by(playerId=playerId, rankingId=rankingId).first()
+# def getRankingObj(playerId, rankingId):
+#     return PlayerRankings.query.filter_by(playerId=playerId, rankingId=rankingId).first()
 
 @app.route('/')
 def home():
