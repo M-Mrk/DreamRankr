@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 db = SQLAlchemy()
 
-class Players(db.Model): 
+class Players(db.Model): #Actual list of Players
     id = db.Column(db.Integer, primary_key=True)
     ranking = db.Column(db.Integer, nullable=False)
     name = db.Column(db.String(100), nullable=False)
@@ -15,7 +15,21 @@ class Players(db.Model):
     lastRanking = db.Column(db.Integer, nullable=True) #To indicate changes in the rankings
     lastRankingChanged = db.Column(db.DateTime, nullable=True) #When the ranking change occurred
 
-class OnGoingMatches(db.Model):
+class Rankings(db.Model): #List of all currently ongoing Rankings
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50))
+
+class PlayerRankings(db.Model): #Table with one row per player per ranking - tracks each player's position and points in different rankings
+    id = db.Column(db.Integer, primary_key=True)
+    playerId = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
+    rankingId = db.Column(db.Integer, db.ForeignKey('rankings.id'), nullable=False)
+    ranking = db.Column(db.Integer, nullable=False)
+    lastRanking = db.Column(db.Integer, nullable=True) #To indicate changes in the rankings
+    lastRankingChanged = db.Column(db.DateTime, nullable=True) #When the ranking change occurred
+    points = db.Column(db.Integer, nullable=False)
+    __table_args__ = (db.UniqueConstraint('playerId', 'rankingId'))
+
+class OnGoingMatches(db.Model): #List of all curent matches
     id = db.Column(db.Integer, primary_key=True)
     challenger = db.Column(db.String(100), nullable=False)
     challengerId = db.Column(db.Integer, nullable=False)
@@ -23,7 +37,7 @@ class OnGoingMatches(db.Model):
     defenderId = db.Column(db.Integer, nullable=False)
     timeStarted = db.Column(db.DateTime, nullable=False)
 
-class FinishedMatches(db.Model):
+class FinishedMatches(db.Model): #List of all finished matches
     id = db.Column(db.Integer, primary_key=True)
     challenger = db.Column(db.String(100), nullable=False)
     challengerId = db.Column(db.Integer, nullable=False)
@@ -36,7 +50,7 @@ class FinishedMatches(db.Model):
     challengerScore = db.Column(db.Integer, nullable=True)
     defenderScore = db.Column(db.Integer, nullable=True)
 
-class LogEntries(db.Model):
+class LogEntries(db.Model): #List of Log Entries
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     level = db.Column(db.String(15))
