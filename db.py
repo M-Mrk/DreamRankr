@@ -29,12 +29,21 @@ class Players(db.Model): #Actual list of Players
 #     points = db.Column(db.Integer, nullable=False)
 #     __table_args__ = (db.UniqueConstraint('playerId', 'rankingId'))
 
+class PlayerBonuses(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    playerId = db.Column(db.Integer, nullable=False)
+    bonus = db.Column(db.Integer, nullable=False)
+    logicOperator = db.Column(db.String(2), nullable=False)
+    limitRanking = db.Column(db.Integer, nullable=False)
+
 class OnGoingMatches(db.Model): #List of all curent matches
     id = db.Column(db.Integer, primary_key=True)
     challenger = db.Column(db.String(100), nullable=False)
     challengerId = db.Column(db.Integer, nullable=False)
+    challengerBonus = db.Column(db.Integer)
     defender = db.Column(db.String(100), nullable=False)
     defenderId = db.Column(db.Integer, nullable=False)
+    defenderBonus = db.Column(db.Integer)
     timeStarted = db.Column(db.DateTime, nullable=False)
 
 class FinishedMatches(db.Model): #List of all finished matches

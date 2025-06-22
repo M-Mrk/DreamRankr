@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect
 from flask_migrate import Migrate
-from db import db, Players, OnGoingMatches, FinishedMatches#, PlayerRankings
+from db import db, Players, OnGoingMatches, FinishedMatches, PlayerBonuses#, PlayerRankings
+from bonuses import getBonus
 from logger import log
 from datetime import datetime, timezone
 
@@ -15,7 +16,7 @@ migrate = Migrate(app, db)
 from playerStats import changeStats
 
 # Add this after creating your Flask app
-app.jinja_env.globals['now'] = datetime.now(datetime.timezone.utc)
+app.jinja_env.globals['now'] = datetime.utcnow
 
 # def getRankingObj(playerId, rankingId):
 #     return PlayerRankings.query.filter_by(playerId=playerId, rankingId=rankingId).first()
@@ -28,6 +29,9 @@ def home():
 @app.route('/trainer')
 def trainer():
     players = Players.query.order_by(Players.ranking).all()
+    # Add bonus information to each player
+    for player in players:
+        player.bonus = PlayerBonuses.query.filter_by(playerId=player.id).first()
     activeMatches = OnGoingMatches.query.order_by(OnGoingMatches.timeStarted.asc()).all()
     return render_template('trainer.html', players=players, activeMatches=activeMatches)
 
@@ -48,6 +52,12 @@ def start_match():
         timeStarted = db.func.now()
     )
     try:
+        bonus = getBonus(new_match)
+        print(f"{bonus.challenger} and {bonus.defender}")
+        if bonus.challenger:
+            new_match.challengerBonus = bonus.challenger
+        if bonus.defender:
+            new_match.defenderBonus = bonus.defender
         db.session.add(new_match)
         db.session.commit()
         log(1, "start_match", f"Starting match from {challenger.name}({challengerId}) against {defender.name}({defenderId})")
@@ -58,7 +68,6 @@ def start_match():
 
 @app.route('/trainer/finish_match', methods=['POST'])
 def finish_match():
-    print("got finish_match Form")
     matchId = int(request.form.get('match_id'))
     match = db.session.get(OnGoingMatches, matchId)
     challenger = db.session.get(Players, match.challengerId)
@@ -117,10 +126,6 @@ def finish_match():
         defenderScore = defenderScore if challengerScore and defenderScore else None
     )
 
-    print(f"Match finished: {challenger.name} vs {defender.name}")
-    print(f"Winner: {winner} (ID: {winnerId})") #Temporary Debugging
-    print(f"Scores - Challenger: {challengerScore if 'challengerScore' in locals() else 'N/A'}, Defender: {defenderScore if 'defenderScore' in locals() else 'N/A'}")
-
     try:
         changeStats(winnerId=winnerId, loserId=loserId, winnerSetsWon=winnerSetsWon, loserSetsWon=loserSetsWon)
         db.session.add(new_finishedmatch) #Works
@@ -162,12 +167,29 @@ def player_add():
                 log(1, "player_add", f"Added new player: {name}. Now has Id: {new_player.id}")
             except Exception as e:
                 log(4, "player_add", f"New player: {name} couldnt be added, because of {e}")
+                return redirect('/trainer') #WIP Error message
+    bonus = request.form.get('bonus')
+    logicOperator = request.form.get('logic_operator')
+    limitRanking = request.form.get('limit_ranking')
+    if bonus and logicOperator and limitRanking and not bonus == "" and not logicOperator == "" and not limitRanking == "":
+        new_bonus = PlayerBonuses(
+            playerId = new_player.id,
+            bonus = int(bonus),
+            logicOperator = logicOperator,
+            limitRanking = int(limitRanking)
+        )
+        try:
+            db.session.add(new_bonus)
+            db.session.commit()
+            log(1, "player_add", f"Added bonus for player {new_player.name}({new_player.id}): {bonus} {logicOperator} {limitRanking}")
+        except Exception as e:
+            log(4, "player_add", f"Could not add bonus for player {new_player.name}({new_player.id}), because of {e}")
+
     return redirect('/trainer')
 
 def checkIfChangedAndUpdate(formId, player, playerArgument, argumentName):
     formArgument = request.form.get(formId)
     if formArgument and not formArgument == playerArgument:
-        print("Ding")
         oldArgument = getattr(player, argumentName)
         setattr(player, argumentName, formArgument)
         try:
@@ -195,8 +217,41 @@ def player_edit():
     for i in range(len(dbArguments)):
         checkIfChangedAndUpdate(formArguments[i], player, player.name, dbArguments[i])
 
-    return redirect('/trainer')
+    # Handle bonus editing
+    bonus = request.form.get('bonus')
+    logicOperator = request.form.get('logic_operator')
+    limitRanking = request.form.get('limit_ranking')
+    
+    if bonus and logicOperator and limitRanking and not bonus == "" and not logicOperator == "" and not limitRanking == "":
+        # Check if player already has a bonus
+        existing_bonus = PlayerBonuses.query.filter_by(playerId=playerId).first()
+        
+        if existing_bonus:
+            # Update existing bonus
+            existing_bonus.bonus = int(bonus)
+            existing_bonus.logicOperator = logicOperator
+            existing_bonus.limitRanking = int(limitRanking)
+            try:
+                db.session.commit()
+                log(1, "player_edit", f"Updated bonus for player {player.name}({player.id}): {bonus} {logicOperator} {limitRanking}")
+            except Exception as e:
+                log(4, "player_edit", f"Could not update bonus for player {player.name}({player.id}), because of {e}")
+        else:
+            # Create new bonus
+            new_bonus = PlayerBonuses(
+                playerId = int(playerId),
+                bonus = int(bonus),
+                logicOperator = logicOperator,
+                limitRanking = int(limitRanking)
+            )
+            try:
+                db.session.add(new_bonus)
+                db.session.commit()
+                log(1, "player_edit", f"Updated/Added bonus for player {player.name}({player.id}): {bonus} {logicOperator} {limitRanking}")
+            except Exception as e:
+                log(4, "player_edit", f"Could not add bonus for player {player.name}({player.id}), because of {e}")
 
+    return redirect('/trainer')
     
 
 @app.route('/trainer/player_delete', methods=['POST'])

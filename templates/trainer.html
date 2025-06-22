@@ -172,6 +172,40 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Bonus Section -->
+                    <div class="mb-3">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="changeBonusToggle">
+                            <label class="form-check-label" for="changeBonusToggle">
+                                <strong>Change Bonus</strong>
+                            </label>
+                        </div>
+                        <div id="editBonusSection" style="display: none;">
+                            <div class="mb-3">
+                                <label for="editBonus" class="form-label">Bonus Points</label>
+                                <input type="number" class="form-control" id="editBonus" name="bonus" placeholder="Enter bonus points" min="0">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Bonus Condition</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Opponent Ranking</span>
+                                    <select class="form-select" id="editLogicOperator" name="logic_operator">
+                                        <option value="">Select condition</option>
+                                        <option value="=">=</option>
+                                        <option value="<"><</option>
+                                        <option value="<=">≤</option>
+                                        <option value=">">></option>
+                                        <option value=">=">≥</option>
+                                    </select>
+                                    <input type="number" class="form-control" id="editLimitRanking" name="limit_ranking" placeholder="Enter ranking limit" min="1">
+                                </div>
+                            </div>
+                            <div class="alert alert-info small" role="alert">
+                                <strong>Example:</strong> If you set bonus "5", condition "≤", and limit "3", the player will get 5 bonus points when the opponent's ranking is 3 or better (1, 2, or 3).
+                            </div>
+                        </div>
+                    </div>
                     
                     <input type="hidden" id="editPlayerId" name="player_id">
                 </form>
@@ -258,6 +292,9 @@
                                             data-player-losses="{{ player.losses }}"
                                             data-player-sets-won="{{ player.setsWon }}"
                                             data-player-sets-lost="{{ player.setsLost }}"
+                                            data-player-bonus="{{ player.bonus.bonus if player.bonus else '' }}"
+                                            data-player-logic-operator="{{ player.bonus.logicOperator if player.bonus else '' }}"
+                                            data-player-limit-ranking="{{ player.bonus.limitRanking if player.bonus else '' }}"
                                             title="Edit">
                                         <span class="material-icons px-2" style="font-size: 20px;">edit</span>
                                     </button>
@@ -303,6 +340,33 @@
                                                 <h5>{{ activeMatches[0].defender }}</h5>
                                             </div>
                                         </div>
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                {% if activeMatches[0].challengerBonus and activeMatches[0].challengerBonus != 0 %}
+                                                    {% if activeMatches[0].challengerBonus > 0 %}
+                                                        <span class="badge bg-success p-1.5 fs-6">+
+                                                    {% elif activeMatches[0].challengerBonus < 0 %}
+                                                        <span class="badge bg-danger p-1.5 fs-6">
+                                                    {% endif %}
+                                                    {{ activeMatches[0].challengerBonus }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-auto">
+                                                <span></span>
+                                            </div>
+                                            <div class="col">
+                                                {% if activeMatches[0].defenderBonus and activeMatches[0].defenderBonus != 0 %}
+                                                    {% if activeMatches[0].defenderBonus > 0 %}
+                                                        <span class="badge bg-success p-1.5 fs-6">+
+                                                    {% elif activeMatches[0].defenderBonus < 0 %}
+                                                        <span class="badge bg-danger p-1.5 fs-6">
+                                                    {% endif %}
+                                                    {{ activeMatches[0].defenderBonus }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
                                         <p class="text-muted mb-2" data-start-timestamp="{{ activeMatches[0].timeStarted.timestamp() }}">
                                             Since: {{ activeMatches[0].timeStarted.strftime('%H:%M') }}
                                         </p>
@@ -330,6 +394,33 @@
                                                 </div>
                                                 <div class="col">
                                                     <h5>{{ match.defender }}</h5>
+                                                </div>
+                                            </div>
+                                            <div class="row align-items-center">
+                                                <div class="col">
+                                                    {% if match.challengerBonus and match.challengerBonus != 0 %}
+                                                        {% if match.challengerBonus > 0 %}
+                                                            <span class="badge bg-success p-1.5 fs-6">+
+                                                        {% elif match.challengerBonus < 0 %}
+                                                            <span class="badge bg-danger p-1.5 fs-6">
+                                                        {% endif %}
+                                                        {{ match.challengerBonus }}
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-auto">
+                                                    <span></span>
+                                                </div>
+                                                <div class="col">
+                                                    {% if match.defenderBonus and match.defenderBonus != 0 %}
+                                                        {% if match.defenderBonus > 0 %}
+                                                            <span class="badge bg-success p-1.5 fs-6">+
+                                                        {% elif match.defenderBonus < 0 %}
+                                                            <span class="badge bg-danger p-1.5 fs-6">
+                                                        {% endif %}
+                                                        {{ match.defenderBonus }}
+                                                        </span>
+                                                    {% endif %}
                                                 </div>
                                             </div>
                                             <p class="text-muted mb-2" data-start-timestamp="{{ match.timeStarted.timestamp() }}">
@@ -373,15 +464,68 @@
                 <div class="d-flex align-items-center mb-3">
                     <h4 class="mb-0 me-2">Add Player</h4>
                     <hr class="flex-grow-1">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" 
+                            data-bs-toggle="offcanvas" 
+                            data-bs-target="#addPlayerOffcanvas" 
+                            aria-controls="addPlayerOffcanvas"
+                            data-bs-toggle="tooltip" 
+                            title="Add Player">
+                        <span class="material-icons" style="font-size: 16px;">add</span>
+                    </button>
                 </div>
-                <form method="post" action="/trainer/player_add">
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="name" name="name" placeholder="Player Name" required>
-                        <button type="submit" class="btn btn-dark">Add Player</button>
-                    </div>
-                </form>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Add Player Offcanvas -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="addPlayerOffcanvas" aria-labelledby="addPlayerOffcanvasLabel" style="width: 500px;">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="addPlayerOffcanvasLabel">Add New Player</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form method="post" action="/trainer/player_add" id="addPlayerForm">
+            <div class="mb-3">
+                <label for="playerName" class="form-label">Player Name</label>
+                <input type="text" class="form-control" id="playerName" name="name" placeholder="Enter player name" required>
+            </div>
+            
+            <div class="mb-3">
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="addBonusToggle">
+                    <label class="form-check-label" for="addBonusToggle">
+                        <strong>Add Bonus (Optional)</strong>
+                    </label>
+                </div>
+                <div id="bonusSection" style="display: none;">
+                    <div class="mb-3">
+                        <label for="bonus" class="form-label">Bonus Points</label>
+                        <input type="number" class="form-control" id="bonus" name="bonus" placeholder="Enter bonus points" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Bonus Condition</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Opponent Ranking</span>
+                            <select class="form-select" id="logicOperator" name="logic_operator">
+                                <option value="">Select condition</option>
+                                <option value="=">=</option>
+                                <option value="<"><</option>
+                                <option value="<=">≤</option>
+                                <option value=">">></option>
+                                <option value=">=">≥</option>
+                            </select>
+                            <input type="number" class="form-control" id="limitRanking" name="limit_ranking" placeholder="Enter ranking limit" min="1">
+                        </div>
+                    </div>
+                    <div class="alert alert-info small" role="alert">
+                        <strong>Example:</strong> If you set bonus "5", condition "≤", and limit "3", the player will get 5 bonus points when the opponent's ranking is 3 or better (1, 2, or 3).
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary w-100">Add Player</button>
+        </form>
     </div>
 </div>
 

@@ -393,7 +393,6 @@ function initializeFinishMatchModal() {
 
         // Submit the form first
         finishMatchForm.submit();
-
       });
     }
   }
@@ -422,10 +421,12 @@ function initializeEditPlayerModal() {
     "changeWinsLossesToggle"
   );
   const changeSetsToggle = document.getElementById("changeSetsToggle");
+  const changeBonusToggle = document.getElementById("changeBonusToggle");
 
   const rankingSection = document.getElementById("rankingSection");
   const winsLossesSection = document.getElementById("winsLossesSection");
   const setsSection = document.getElementById("setsSection");
+  const editBonusSection = document.getElementById("editBonusSection");
 
   if (!editModal || !editForm || !saveBtn || !deleteBtn) {
     return; // Not on trainer page
@@ -477,6 +478,25 @@ function initializeEditPlayerModal() {
     });
   }
 
+  if (changeBonusToggle && editBonusSection) {
+    changeBonusToggle.addEventListener("change", function () {
+      if (this.checked) {
+        editBonusSection.style.display = "block";
+        document.getElementById("editBonus").required = true;
+        document.getElementById("editLogicOperator").required = true;
+        document.getElementById("editLimitRanking").required = true;
+      } else {
+        editBonusSection.style.display = "none";
+        document.getElementById("editBonus").required = false;
+        document.getElementById("editLogicOperator").required = false;
+        document.getElementById("editLimitRanking").required = false;
+        document.getElementById("editBonus").value = "";
+        document.getElementById("editLogicOperator").value = "";
+        document.getElementById("editLimitRanking").value = "";
+      }
+    });
+  }
+
   // Populate modal when it's opened
   editModal.addEventListener("show.bs.modal", function (event) {
     const button = event.relatedTarget;
@@ -490,6 +510,9 @@ function initializeEditPlayerModal() {
       const playerLosses = button.getAttribute("data-player-losses");
       const playerSetsWon = button.getAttribute("data-player-sets-won");
       const playerSetsLost = button.getAttribute("data-player-sets-lost");
+      const playerBonus = button.getAttribute("data-player-bonus");
+      const playerLogicOperator = button.getAttribute("data-player-logic-operator");
+      const playerLimitRanking = button.getAttribute("data-player-limit-ranking");
 
       // Populate form fields
       document.getElementById("editPlayerId").value = playerId;
@@ -499,6 +522,9 @@ function initializeEditPlayerModal() {
       document.getElementById("editPlayerLosses").value = playerLosses;
       document.getElementById("editPlayerSetsWon").value = playerSetsWon;
       document.getElementById("editPlayerSetsLost").value = playerSetsLost;
+      document.getElementById("editBonus").value = playerBonus || "";
+      document.getElementById("editLogicOperator").value = playerLogicOperator || "";
+      document.getElementById("editLimitRanking").value = playerLimitRanking || "";
 
       // Update modal title
       document.getElementById(
@@ -509,10 +535,12 @@ function initializeEditPlayerModal() {
       changeRankingToggle.checked = false;
       changeWinsLossesToggle.checked = false;
       changeSetsToggle.checked = false;
+      changeBonusToggle.checked = false;
 
       rankingSection.style.display = "none";
       winsLossesSection.style.display = "none";
       setsSection.style.display = "none";
+      editBonusSection.style.display = "none";
 
       // Remove required attributes when sections are hidden
       document.getElementById("editPlayerRanking").required = false;
@@ -520,6 +548,9 @@ function initializeEditPlayerModal() {
       document.getElementById("editPlayerLosses").required = false;
       document.getElementById("editPlayerSetsWon").required = false;
       document.getElementById("editPlayerSetsLost").required = false;
+      document.getElementById("editBonus").required = false;
+      document.getElementById("editLogicOperator").required = false;
+      document.getElementById("editLimitRanking").required = false;
     }
   });
 
@@ -624,12 +655,64 @@ function initializeEditPlayerModal() {
     changeRankingToggle.checked = false;
     changeWinsLossesToggle.checked = false;
     changeSetsToggle.checked = false;
+    changeBonusToggle.checked = false;
 
     // Hide sections
     rankingSection.style.display = "none";
     winsLossesSection.style.display = "none";
     setsSection.style.display = "none";
+    editBonusSection.style.display = "none";
   });
+}
+
+/**
+ * Initialize add player form functionality
+ * Manages bonus section toggle and form validation
+ */
+function initializeAddPlayerForm() {
+  const addBonusToggle = document.getElementById("addBonusToggle");
+  const bonusSection = document.getElementById("bonusSection");
+  const bonusInput = document.getElementById("bonus");
+  const logicOperatorSelect = document.getElementById("logicOperator");
+  const limitRankingInput = document.getElementById("limitRanking");
+  const addPlayerForm = document.getElementById("addPlayerForm");
+
+  if (!addBonusToggle || !bonusSection) {
+    return; // Not on trainer page
+  }
+
+  // Handle bonus toggle
+  addBonusToggle.addEventListener("change", function () {
+    if (this.checked) {
+      bonusSection.style.display = "block";
+      // Make bonus fields required when visible
+      bonusInput.required = true;
+      logicOperatorSelect.required = true;
+      limitRankingInput.required = true;
+    } else {
+      bonusSection.style.display = "none";
+      // Clear and remove required when hidden
+      bonusInput.required = false;
+      logicOperatorSelect.required = false;
+      limitRankingInput.required = false;
+      bonusInput.value = "";
+      logicOperatorSelect.value = "";
+      limitRankingInput.value = "";
+    }
+  });
+
+  // Reset form when offcanvas is hidden
+  const addPlayerOffcanvas = document.getElementById("addPlayerOffcanvas");
+  if (addPlayerOffcanvas) {
+    addPlayerOffcanvas.addEventListener("hidden.bs.offcanvas", function () {
+      addPlayerForm.reset();
+      addBonusToggle.checked = false;
+      bonusSection.style.display = "none";
+      bonusInput.required = false;
+      logicOperatorSelect.required = false;
+      limitRankingInput.required = false;
+    });
+  }
 }
 
 /**
@@ -860,7 +943,8 @@ document.addEventListener("DOMContentLoaded", function () {
   initializeChallengeSystem();
   initializeFinishMatchModal();
   initializeActiveMatchesSettings();
-  initializeEditPlayerModal(); // Add this line
+  initializeEditPlayerModal();
+  initializeAddPlayerForm(); // Add this line
 
   // Initialize Bootstrap tooltips if any exist
   const tooltipTriggerList = [].slice.call(
