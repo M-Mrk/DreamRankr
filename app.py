@@ -1,450 +1,558 @@
 from flask import Flask, render_template, request, redirect
 from flask_migrate import Migrate
 from db import db, Players, OnGoingMatches, FinishedMatches, PlayerBonuses, Rankings, PlayerRankings
-from bonuses import getBonus
+from bonuses import updateOrCreatePlayerBonus, validateBonusParameters
+from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, checkIfChangedAndUpdate, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes
 from logger import log
 from datetime import datetime, timezone
 
+# Initialize Flask application with database configuration
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Main.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Initialize database and migration support
 db.init_app(app)
 migrate = Migrate(app, db)
 
 # Import stat functions from playerStats module
 from playerStats import changeStats
 
-# Add this after creating your Flask app
+# Add datetime utility to Jinja template globals for use in templates
 app.jinja_env.globals['now'] = datetime.utcnow
-
-# def getRankingObj(playerId, rankingId):
-#     return PlayerRankings.query.filter_by(playerId=playerId, rankingId=rankingId).first()
-
-def getRankingAndPoints(playerObj, rankingId):
-    playerRankingObj = PlayerRankings.query.filter_by(playerId=playerObj.id, rankingId=rankingId).first()
-    playerObj.ranking = playerRankingObj.ranking
-    playerObj.points = playerRankingObj.points
-    playerObj.lastRanking = playerRankingObj.lastRanking
-    playerObj.lastRankingChanged = playerRankingObj.lastRankingChanged
-
-def getPlayersOfRanking(rankingId):
-    players = db.session.query(Players).join(
-        PlayerRankings, Players.id == PlayerRankings.playerId
-    ).filter(PlayerRankings.rankingId == rankingId).order_by(
-        PlayerRankings.ranking
-    ).all()
-
-    for player in players:
-        getRankingAndPoints(player, rankingId)
-
-    return players
-
-def getActiveMatchesOfRanking(rankingId):
-    activeMatches = OnGoingMatches.query.filter_by(rankingId=rankingId).order_by(OnGoingMatches.timeStarted.asc()).all()
-    return activeMatches
 
 @app.route('/')
 def home():
-    rankings = Rankings.query.all()
-    if Rankings.query.count() == 1:
-        return redirect(f'/view/{rankings[0].id}')
+    """
+    Renders the home page displaying all available rankings.
+    This is the main entry point for users to select which ranking to view.
     
-    return render_template('index.html', rankings=rankings)
+    Returns:
+        Rendered HTML template with list of all rankings
+        
+    Raises:
+        Exception: Logs error if database query fails
+    """
+    try:
+        rankings = Rankings.query.all()
+        log(1, "home", f"Successfully loaded {len(rankings)} rankings for home page")
+        return render_template('index.html', rankings=rankings)
+    except Exception as e:
+        log(4, "home", f"Error loading rankings for home page: {e}")
+        # Return empty rankings list as fallback
+        return render_template('index.html', rankings=[])
 
 @app.route('/view/<int:rankingId>')
 def view(rankingId):
-    players = getPlayersOfRanking(rankingId)
-    return render_template('viewer.html', players=players)
+    """
+    Renders the viewer page for a specific ranking.
+    Displays read-only view of players in the ranking for public viewing.
+    
+    Args:
+        rankingId: ID of the ranking to display
+        
+    Returns:
+        Rendered HTML template with players in the specified ranking
+        
+    Raises:
+        Exception: Logs error if ranking data cannot be retrieved
+    """
+    try:
+        players = getPlayersOfRanking(rankingId)
+        log(1, "view", f"Successfully loaded {len(players)} players for ranking {rankingId}")
+        return render_template('viewer.html', players=players)
+    except Exception as e:
+        log(4, "view", f"Error loading players for ranking {rankingId}: {e}")
+        # Return empty players list as fallback
+        return render_template('viewer.html', players=[])
 
 @app.route('/trainer/<int:rankingId>')
 def trainer(rankingId):
-    players = getPlayersOfRanking(rankingId)
-    allPlayers = Players.query.all()
-    # Add bonus information to each player
-    for player in players:
-        player.bonus = PlayerBonuses.query.filter_by(playerId=player.id).first()
-    activeMatches = getActiveMatchesOfRanking(rankingId)
-    return render_template('trainer.html', players=players, activeMatches=activeMatches, rankingId=rankingId, allPlayers=allPlayers)
+    """
+    Renders the trainer page for managing a specific ranking.
+    Provides full administrative interface for managing players, matches, and bonuses.
+    
+    Args:
+        rankingId: ID of the ranking to manage
+        
+    Returns:
+        Rendered HTML template with players, active matches, and management tools
+        
+    Raises:
+        Exception: Logs error if ranking data cannot be retrieved
+    """
+    try:
+        # Get players in the ranking with their bonus information
+        players = getPlayersOfRanking(rankingId)
+        
+        # Add bonus information to each player for display in the interface
+        for player in players:
+            try:
+                player.bonus = PlayerBonuses.query.filter_by(playerId=player.id).first()
+            except Exception as e:
+                log(3, "trainer", f"Error loading bonus for player {player.id}: {e}")
+                player.bonus = None
+        
+        # Get active matches for this ranking
+        activeMatches = getActiveMatchesOfRanking(rankingId)
+        
+        # Get all players for import functionality
+        allPlayers = Players.query.all()
+        
+        log(1, "trainer", f"Successfully loaded trainer page for ranking {rankingId} with {len(players)} players and {len(activeMatches)} active matches")
+        
+        return render_template('trainer.html', 
+                             players=players, 
+                             activeMatches=activeMatches, 
+                             rankingId=rankingId, 
+                             allPlayers=allPlayers)
+                             
+    except Exception as e:
+        log(4, "trainer", f"Error loading trainer page for ranking {rankingId}: {e}")
+        # Return minimal template with empty data as fallback
+        return render_template('trainer.html', 
+                             players=[], 
+                             activeMatches=[], 
+                             rankingId=rankingId, 
+                             allPlayers=[])
 
 @app.route('/trainer/start_match', methods=['POST'])
 def start_match():
-    rankingId = int(request.form.get('rankingId'))
-    challengerId = request.form.get('challenger_id')
-    defenderId = request.form.get('defender_id')
-    if not challengerId or not defenderId:
-        log(3, "start_match", f"Challenger or defender ID is missing. challengerId: {challengerId}, defenderId: {defenderId}")
-        return redirect(f'/trainer/{rankingId}')
-    challenger = db.session.get(Players, challengerId)
-    defender = db.session.get(Players, defenderId)
-    new_match = OnGoingMatches(
-        rankingId = rankingId,
-        challenger = challenger.name,
-        challengerId = challengerId,
-        defender = defender.name,
-        defenderId = defenderId,
-        timeStarted = db.func.now()
-    )
+    """
+    Initiates a new match between two players in a ranking.
+    Creates an ongoing match record with calculated bonus points.
+    
+    Form Parameters:
+        rankingId: ID of the ranking where the match takes place
+        challenger_id: ID of the challenging player
+        defender_id: ID of the defending player
+        
+    Returns:
+        Redirect to trainer page for the ranking
+        
+    Raises:
+        Exception: Logs error if match cannot be started
+    """
     try:
-        bonus = getBonus(new_match)
-        print(f"{bonus.challenger} and {bonus.defender}")
-        if bonus.challenger:
-            new_match.challengerBonus = bonus.challenger
-        if bonus.defender:
-            new_match.defenderBonus = bonus.defender
-        db.session.add(new_match)
-        db.session.commit()
-        log(1, "start_match", f"Starting match from {challenger.name}({challengerId}) against {defender.name}({defenderId})")
+        # Extract and validate form parameters
+        rankingId = request.form.get('rankingId')
+        challengerId = request.form.get('challenger_id')
+        defenderId = request.form.get('defender_id')
+        
+        # Validate required parameters
+        if not rankingId:
+            log(3, "start_match", "Missing rankingId parameter")
+            return redirect('/trainer/1')  # Fallback to default ranking
+            
+        rankingId = int(rankingId)
+        
+        if not challengerId or not defenderId:
+            log(3, "start_match", f"Challenger or defender ID is missing. challengerId: {challengerId}, defenderId: {defenderId}")
+            return redirect(f'/trainer/{rankingId}')
+            
+        # Validate that challenger and defender are different
+        if challengerId == defenderId:
+            log(3, "start_match", f"Challenger and defender cannot be the same player: {challengerId}")
+            return redirect(f'/trainer/{rankingId}')
+        
+        # Start the match
+        startMatch(challengerId, defenderId, rankingId)
+        log(1, "start_match", f"Started match in ranking {rankingId} between challenger {challengerId} and defender {defenderId}")
+        
+    except ValueError as e:
+        log(4, "start_match", f"Invalid parameter values: {e}")
     except Exception as e:
-        log(4, "start_match", f"Couldnt start match from {challenger.name}({challengerId}) against {defender.name}({defenderId}), because of: {e}")
-
+        log(4, "start_match", f"Could not start match: {e}")
+    
     return redirect(f'/trainer/{rankingId}')
 
 @app.route('/trainer/finish_match', methods=['POST'])
 def finish_match():
-    rankingId = int(request.form.get('rankingId'))
-    matchId = int(request.form.get('match_id'))
-    match = db.session.get(OnGoingMatches, matchId)
-    challenger = db.session.get(Players, match.challengerId)
-    defender = db.session.get(Players, match.defenderId)
+    """
+    Completes an ongoing match and records the results.
+    Updates player statistics, rankings, and moves match to finished status.
     
-    # Initialize variables
-    challengerScore = None
-    defenderScore = None
-    winnerSetsWon = None
-    loserSetsWon = None
-    
-    if request.form.get('challenger_score') and request.form.get('defender_score'): #Sets loser and Winner | check if Score was provided
-        challengerScore = int(request.form.get('challenger_score'))
-        defenderScore = int(request.form.get('defender_score'))
-        if challengerScore > defenderScore: #decide based on score who won | challengers score is higher = challenger won
-            winner = challenger.name
-            winnerId = challenger.id
-            winnerSetsWon = challengerScore
-            loserSetsWon = defenderScore
-            loserId = defender.id
-        elif defenderScore > challengerScore: #defender Won
-            winner = defender.name
-            winnerId = defender.id 
-            winnerSetsWon = defenderScore
-            loserSetsWon = challengerScore
-            loserId = challenger.id
-    else: #alternative logic if only who won is provided
-        winnerId = request.form.get('winner_id')
-        if winnerId == "" or not winnerId:
-            return redirect(f'/trainer/{rankingId}') #WIP: Error message: Winner couldnt be decided/wasnt transmitted, ties arent allowed
-        winnerId = int(winnerId)
-        if winnerId == challenger.id:
-            winner = challenger.name
-            loserId = defender.id
-        else:
-            winner = defender.name
-            loserId = challenger.id
-    if not winner or not winnerId:
-        if challengerScore or defenderScore:
-            error = f"Winner or WinnerId could not be resolved when finishing a match. ChallengerScore: {challengerScore} and defenderScore: {defenderScore}"
-        else:
-            error = f"Winner or WinnerId could not be resolved when finishing a match"
-        log(3, "finish_match", error)
-        return redirect(f'/trainer/{rankingId}') #WIP: Error message: Winner couldnt be decided/wasnt transmitted, ties arent allowed
-
-    new_finishedmatch = FinishedMatches(
-        rankingId = rankingId,
-        challenger = challenger.name,
-        challengerId = challenger.id,
-        defender = defender.name,
-        defenderId = defender.id,
-        timeStarted = match.timeStarted,
-        timeFinished = db.func.now(),
-        winner = winner,
-        winnerId = winnerId,
-        challengerScore = challengerScore if challengerScore and defenderScore else None,
-        defenderScore = defenderScore if challengerScore and defenderScore else None,
-    )
-
+    Form Parameters:
+        rankingId: ID of the ranking where the match took place
+        match_id: ID of the ongoing match to finish
+        winner_id: ID of the winning player (optional if scores provided)
+        challenger_score: Sets won by challenger (optional)
+        defender_score: Sets won by defender (optional)
+        
+    Returns:
+        Redirect to trainer page for the ranking
+        
+    Raises:
+        Exception: Logs error if match cannot be finished
+    """
     try:
-        changeStats(winnerId=winnerId, loserId=loserId, winnerSetsWon=winnerSetsWon, loserSetsWon=loserSetsWon, rankingId=rankingId)
-        db.session.add(new_finishedmatch) #Works
-        db.session.delete(match) #Works
-        db.session.commit()
-        log(1, "finish_match", f"Finished match with now id: {new_finishedmatch.id}, winnerId: {winnerId}")
-        return redirect(f'/trainer/{rankingId}')
+        # Extract and validate form parameters
+        rankingId = request.form.get('rankingId')
+        matchId = request.form.get('match_id')
+        winnerId = request.form.get('winner_id')
+        challengerScore = request.form.get('challenger_score')
+        defenderScore = request.form.get('defender_score')
+        
+        # Validate required parameters
+        if not rankingId or not matchId:
+            log(3, "finish_match", f"Missing required parameters - rankingId: {rankingId}, matchId: {matchId}")
+            return redirect('/trainer/1')  # Fallback to default ranking
+            
+        rankingId = int(rankingId)
+        matchId = int(matchId)
+        
+        # Convert scores to integers if provided
+        if challengerScore:
+            challengerScore = int(challengerScore)
+        if defenderScore:
+            defenderScore = int(defenderScore)
+            
+        # Validate that either winner is specified or scores are provided
+        if not winnerId and (challengerScore is None or defenderScore is None):
+            log(3, "finish_match", f"Either winner_id or both scores must be provided for match {matchId}")
+            return redirect(f'/trainer/{rankingId}')
+        
+        # Finish the match
+        endMatch(matchId, rankingId, winnerId, challengerScore, defenderScore)
+        log(1, "finish_match", f"Finished match {matchId} in ranking {rankingId}, winner: {winnerId}")
+        
+    except ValueError as e:
+        log(4, "finish_match", f"Invalid parameter values: {e}")
     except Exception as e:
-        log(4, "finish_match", f"Could not finish match with id: {matchId}, because of: {e}")
-        return redirect(f'/trainer/{rankingId}') #WIP: Error message
+        log(4, "finish_match", f"Could not finish match {matchId}: {e}")
     
+    return redirect(f'/trainer/{rankingId}')
+
 @app.route('/trainer/player_add', methods=['POST'])
 def player_add():
-    rankingId = int(request.form.get('rankingId'))
-    name = request.form.get('name')
+    """
+    Creates a new player and adds them to a ranking with optional bonus settings.
+    Validates input parameters and handles database transaction safely.
     
-    if not name or not rankingId:
-        return redirect(f'/trainer/{rankingId}')
-    
-    # Check if player already exists
-    currentPlayers = Players.query.all()
-    if name in [player.name for player in currentPlayers]:
-        log(3, "player_add", "Submitted new player already exists")
-        return redirect(f'/trainer/{rankingId}')
-    
-    # Create new player
-    new_player = Players(
-        name=name,
-        wins=0,
-        losses=0,
-        setsWon=0,
-        setsLost=0
-    )
-    
-    # Determine next ranking
-    currentRankings = PlayerRankings.query.filter_by(rankingId=rankingId).order_by(PlayerRankings.ranking).all()
-    next_ranking = currentRankings[-1].ranking + 1 if currentRankings else 1
-    
-    # Add player first to get ID
-    db.session.add(new_player)
-    db.session.flush()  # This assigns the ID without committing
-    
-    # Create ranking entry
-    new_ranking = PlayerRankings(
-        playerId=new_player.id,
-        rankingId=rankingId, 
-        ranking=next_ranking, 
-        points=0
-    )
-    db.session.add(new_ranking)
-    
-    # Handle bonus if provided
-    bonus = request.form.get('bonus')
-    logicOperator = request.form.get('logic_operator')
-    limitRanking = request.form.get('limit_ranking')
-    
-    if bonus and logicOperator and limitRanking:
-        new_bonus = PlayerBonuses(
-            playerId=new_player.id,
-            bonus=int(bonus),
-            logicOperator=logicOperator,
-            limitRanking=int(limitRanking)
-        )
-        db.session.add(new_bonus)
-    
+    Form Parameters:
+        rankingId: ID of the ranking to add the player to
+        name: Name of the new player
+        bonus: Bonus points amount (optional)
+        logic_operator: Comparison operator for bonus condition (optional)
+        limit_ranking: Ranking threshold for bonus activation (optional)
+        
+    Returns:
+        Redirect to trainer page for the ranking
+        
+    Raises:
+        Exception: Logs error if player cannot be created
+    """
     try:
-        db.session.commit()
-        log(1, "player_add", f"Added new player: {name}. Now has Id: {new_player.id}")
+        # Extract and validate form parameters
+        rankingId = request.form.get('rankingId')
+        name = request.form.get('name')
+        
+        # Validate required parameters
+        if not rankingId:
+            log(3, "player_add", "Missing rankingId parameter")
+            return redirect('/trainer/1')  # Fallback to default ranking
+            
+        rankingId = int(rankingId)
+        
+        if not name or name.strip() == "":
+            log(3, "player_add", f"Name is missing or empty for ranking {rankingId}")
+            return redirect(f'/trainer/{rankingId}')
+        
+        # Sanitize player name
+        name = name.strip()
+        
+        # Extract optional bonus parameters
+        bonus = request.form.get('bonus')
+        logicOperator = request.form.get('logic_operator')
+        limitRanking = request.form.get('limit_ranking')
+        
+        # Create the new player
+        newPlayer(name, rankingId, bonus, logicOperator, limitRanking)
+        log(1, "player_add", f"Added new player {name} to ranking {rankingId}")
+        
+    except ValueError as e:
+        db.session.rollback()
+        log(4, "player_add", f"Invalid parameter values for new player: {e}")
     except Exception as e:
         db.session.rollback()
         log(4, "player_add", f"New player: {name} couldn't be added, because of {e}")
-        return redirect(f'/trainer/{rankingId}')
     
     return redirect(f'/trainer/{rankingId}')
 
 @app.route('/trainer/player_import', methods=['POST'])
 def player_import():
-    rankingId = request.form.get('rankingId')
-    importPlayerId = request.form.get('import_player_id')
-
-    if not rankingId or not importPlayerId:
-        log(3, "player_import", f"RankingId or importPlayerId is missing. rankingId: {rankingId}, importPlayerId: {importPlayerId}")
-        return redirect(f'/trainer/{rankingId}')
-
-    # Check if player exists
-    player = db.session.get(Players, importPlayerId)
-    if not player:
-        log(3, "player_import", f"Player with ID {importPlayerId} does not exist")
-        return redirect(f'/trainer/{rankingId}')
-
-    # Check if player is already in this ranking
-    existing_ranking = PlayerRankings.query.filter_by(playerId=importPlayerId, rankingId=rankingId).first()
-    if existing_ranking:
-        log(3, "player_import", f"Player {player.name}({importPlayerId}) is already in ranking {rankingId}")
-        return redirect(f'/trainer/{rankingId}')
-
-    # Determine next ranking position
-    currentRankings = PlayerRankings.query.filter_by(rankingId=rankingId).order_by(PlayerRankings.ranking).all()
-    next_ranking = currentRankings[-1].ranking + 1 if currentRankings else 1
-
-    # Create ranking entry for existing player
-    new_ranking = PlayerRankings(
-        playerId=importPlayerId,
-        rankingId=rankingId,
-        ranking=next_ranking,
-        points=0
-    )
-
+    """
+    Imports an existing player into a ranking.
+    Adds a player who already exists in the system to a new ranking.
+    
+    Form Parameters:
+        rankingId: ID of the ranking to import the player to
+        import_player_id: ID of the existing player to import
+        
+    Returns:
+        Redirect to trainer page for the ranking
+        
+    Raises:
+        Exception: Logs error if player cannot be imported
+    """
     try:
-        db.session.add(new_ranking)
-        db.session.commit()
-        log(1, "player_import", f"Imported player {player.name}({importPlayerId}) to ranking {rankingId}")
+        # Extract and validate form parameters
+        rankingId = request.form.get('rankingId')
+        importPlayerId = request.form.get('import_player_id')
+        
+        # Validate required parameters
+        if not rankingId:
+            log(3, "player_import", "Missing rankingId parameter")
+            return redirect('/trainer/1')  # Fallback to default ranking
+            
+        rankingId = int(rankingId)
+        
+        if not importPlayerId:
+            log(3, "player_import", f"Missing import_player_id for ranking {rankingId}")
+            return redirect(f'/trainer/{rankingId}')
+            
+        importPlayerId = int(importPlayerId)
+        
+        # Import the player
+        addPlayerToRanking(importPlayerId, rankingId)
+        log(1, "player_import", f"Imported player {importPlayerId} to ranking {rankingId}")
+        
+    except ValueError as e:
+        log(4, "player_import", f"Invalid parameter values for player import: {e}")
     except Exception as e:
-        db.session.rollback()
-        log(4, "player_import", f"Could not import player {player.name}({importPlayerId}) to ranking {rankingId}, because of {e}")
-
+        log(4, "player_import", f"Could not import player {importPlayerId} to ranking {rankingId}: {e}")
+    
     return redirect(f'/trainer/{rankingId}')
-
-def checkIfChangedAndUpdate(formId, player, playerArgument, argumentName):
-    formArgument = request.form.get(formId)
-    if formArgument and not formArgument == playerArgument:
-        oldArgument = getattr(player, argumentName)
-        setattr(player, argumentName, formArgument)
-        try:
-            db.session.commit()
-        except Exception as e:
-            log(4, "player_edit", f"Could not change {argumentName} for {player.name}({player.id}) from {oldArgument} to {formArgument}, because of {e}")
-        log(1, "player_edit", f"Changed {player.name}({player.id}) {argumentName} from {oldArgument} to {formArgument}")
 
 @app.route('/trainer/player_edit', methods=['POST'])
 def player_edit():
-    playerId = request.form.get('player_id')
-    rankingId = request.form.get('rankingId')
-    if not playerId:
-        log(3, "player_edit", f"Could not edit player because the submitted Id was empty")
-        return redirect(f'/trainer/{rankingId}') #WIP: Add error message
-
-    try:
-        player = db.session.get(Players, playerId)
-    except Exception as e:
-        log(4, "player_edit", f"Could not get Player from playerId: {playerId}, because of {e}")
-        return redirect(f'/trainer/{rankingId}') #WIP: Add error message
+    """
+    Updates player information including attributes, ranking, and bonus settings.
+    Handles multiple types of updates in a single transaction.
     
-    dbArguments = ["ranking", "name", "wins", "losses", "setsWon", "setsLost"]
-    formArguments = ['ranking', 'name', 'wins', 'losses', 'sets_won', 'sets_lost']
-
-    for i in range(len(dbArguments)):
-        checkIfChangedAndUpdate(formArguments[i], player, player.name, dbArguments[i])
-
-    # Handle bonus editing
-    bonus = request.form.get('bonus')
-    logicOperator = request.form.get('logic_operator')
-    limitRanking = request.form.get('limit_ranking')
-    
-    if bonus and logicOperator and limitRanking and not bonus == "" and not logicOperator == "" and not limitRanking == "":
-        # Check if player already has a bonus
-        existing_bonus = PlayerBonuses.query.filter_by(playerId=playerId).first()
+    Form Parameters:
+        player_id: ID of the player to edit
+        rankingId: ID of the current ranking
+        ranking: New ranking position (optional)
+        name: New player name (optional)
+        wins: New win count (optional)
+        losses: New loss count (optional)
+        setsWon: New sets won count (optional)
+        setsLost: New sets lost count (optional)
+        bonus: Bonus points amount (optional)
+        logic_operator: Comparison operator for bonus (optional)
+        limit_ranking: Ranking threshold for bonus (optional)
         
-        if existing_bonus:
-            # Update existing bonus
-            existing_bonus.bonus = int(bonus)
-            existing_bonus.logicOperator = logicOperator
-            existing_bonus.limitRanking = int(limitRanking)
-            try:
-                db.session.commit()
-                log(1, "player_edit", f"Updated bonus for player {player.name}({player.id}): {bonus} {logicOperator} {limitRanking}")
-            except Exception as e:
-                log(4, "player_edit", f"Could not update bonus for player {player.name}({player.id}), because of {e}")
-        else:
-            # Create new bonus
-            new_bonus = PlayerBonuses(
-                playerId = int(playerId),
-                bonus = int(bonus),
-                logicOperator = logicOperator,
-                limitRanking = int(limitRanking)
-            )
-            try:
-                db.session.add(new_bonus)
-                db.session.commit()
-                log(1, "player_edit", f"Updated/Added bonus for player {player.name}({player.id}): {bonus} {logicOperator} {limitRanking}")
-            except Exception as e:
-                log(4, "player_edit", f"Could not add bonus for player {player.name}({player.id}), because of {e}")
-
-    return redirect(f'/trainer/{rankingId}')
+    Returns:
+        Redirect to trainer page for the ranking
+        
+    Raises:
+        Exception: Logs error if player cannot be updated
+    """
+    try:
+        # Extract and validate form parameters
+        playerId = request.form.get('player_id')
+        rankingId = request.form.get('rankingId')
+        
+        # Validate required parameters
+        if not rankingId:
+            log(3, "player_edit", "Missing rankingId parameter")
+            return redirect('/trainer/1')  # Fallback to default ranking
+            
+        rankingId = int(rankingId)
+        
+        if not playerId:
+            log(3, "player_edit", f"Could not edit player because the submitted Id was empty")
+            return redirect(f'/trainer/{rankingId}')
+        
+        playerId = int(playerId)
+        
+        # Get the player object
+        player = db.session.get(Players, playerId)
+        if not player:
+            log(3, "player_edit", f"Player with ID {playerId} not found")
+            return redirect(f'/trainer/{rankingId}')
     
+        # Handle ranking update
+        new_ranking = request.form.get('ranking')
+        if new_ranking and new_ranking.strip():
+            try:
+                new_ranking = int(new_ranking)
+                player_ranking_entry = PlayerRankings.query.filter_by(playerId=playerId, rankingId=rankingId).first()
+                
+                if player_ranking_entry and player_ranking_entry.ranking != new_ranking:
+                    updatePlayerRanking(playerId, rankingId, new_ranking)
+                    log(1, "player_edit", f"Updated ranking for player {player.name} to {new_ranking}")
+            except ValueError as e:
+                log(3, "player_edit", f"Invalid ranking value: {new_ranking}")
+        
+        # Handle player attribute updates
+        attribute_mappings = [
+            ("name", "name"),
+            ("wins", "wins"),
+            ("losses", "losses"),
+            ("setsWon", "sets_won"),
+            ("setsLost", "sets_lost")
+        ]
+        updatePlayerAttributes(player, attribute_mappings, request)
+        
+        # Handle bonus update/creation
+        bonus = request.form.get('bonus')
+        logicOperator = request.form.get('logic_operator')
+        limitRanking = request.form.get('limit_ranking')
+        
+        if validateBonusParameters(bonus, logicOperator, limitRanking):
+            success = updateOrCreatePlayerBonus(playerId, bonus, logicOperator, limitRanking)
+            if success:
+                log(1, "player_edit", f"Updated bonus for player {player.name}")
+            else:
+                log(3, "player_edit", f"Failed to update bonus for player {player.name}")
+        
+        log(1, "player_edit", f"Successfully edited player {player.name} (ID: {playerId})")
+        
+    except ValueError as e:
+        log(4, "player_edit", f"Invalid parameter values for player edit: {e}")
+    except Exception as e:
+        log(4, "player_edit", f"Could not edit player {playerId}: {e}")
+    
+    return redirect(f'/trainer/{rankingId}')
+
 @app.route('/trainer/player_remove', methods=['POST'])
 def player_remove():
-    playerId = request.form.get('player_id')
-    rankingId = request.form.get('rankingId')
-    if not playerId:
-        log(3, "player_remove", f"Could not remove player because the submitted Id was empty")
-        return redirect(f'/trainer/{rankingId}') #WIP: Add error message
-
-    try:
-        player = db.session.get(Players, playerId)
-    except Exception as e:
-        log(4, "player_remove", f"Could not get Player from playerId: {playerId}, because of {e}")
-        return redirect(f'/trainer/{rankingId}') #WIP: Add error message
+    """
+    Removes a player from a specific ranking without deleting the player entirely.
+    The player remains in the system and can be added to other rankings.
     
+    Form Parameters:
+        player_id: ID of the player to remove
+        rankingId: ID of the ranking to remove the player from
+        
+    Returns:
+        Redirect to trainer page for the ranking
+        
+    Raises:
+        Exception: Logs error if player cannot be removed
+    """
     try:
-        playerRankingEntry = PlayerRankings.query.filter_by(playerId=playerId, rankingId=rankingId).first()
+        # Extract and validate form parameters
+        playerId = request.form.get('player_id')
+        rankingId = request.form.get('rankingId')
+        
+        # Validate required parameters
+        if not rankingId:
+            log(3, "player_remove", "Missing rankingId parameter")
+            return redirect('/trainer/1')  # Fallback to default ranking
+            
+        rankingId = int(rankingId)
+        
+        if not playerId:
+            log(3, "player_remove", f"Could not remove player because the submitted Id was empty")
+            return redirect(f'/trainer/{rankingId}')
+            
+        playerId = int(playerId)
+        
+        # Remove the player from the ranking
+        removePlayerFromRanking(playerId, rankingId)
+        log(1, "player_remove", f"Removed Player {playerId} from Ranking with Id:{rankingId}")
+        
+    except ValueError as e:
+        log(4, "player_remove", f"Invalid parameter values for player removal: {e}")
     except Exception as e:
-        log(3, "player_remove", f"Could not find ranking entry for player {player.name}({playerId}) in ranking {rankingId}, because of {e}")
-        return redirect(f'/trainer/{rankingId}') #WIP: Add error message
+        log(4, "player_remove", f"Could not remove Player {playerId} from Ranking {rankingId}: {e}")
     
-    if not playerRankingEntry:
-        log(3, "player_remove", f"Could not find ranking entry for player {player.name}({playerId}) in ranking {rankingId}")
-        return redirect(f'/trainer/{rankingId}') #WIP: Add error message
-
-    try:
-        db.session.delete(playerRankingEntry)
-        db.session.commit()
-    except Exception as e:
-        log(4, "player_remove", f"Could not remove Player {player.name}({playerId}), because of {e}")
-        return redirect(f'/trainer/{rankingId}') #WIP: Add error message
-    
-    log(1, "player_remove", f"Removed Player {player.name}({playerId}) from Ranking with Id:{rankingId}")
     return redirect(f'/trainer/{rankingId}')
 
 @app.route('/trainer/player_delete', methods=['POST'])
 def player_delete():
-    playerId = request.form.get('player_id')
-    rankingId = request.form.get('rankingId')
-    if not playerId:
-        log(3, "player_delete", f"Could not delete player because the submitted Id was empty")
-        return redirect('/trainer') #WIP: Add error message
+    """
+    Permanently deletes a player from the entire system.
+    Removes the player from all rankings and deletes all associated data.
     
+    Form Parameters:
+        player_id: ID of the player to delete
+        rankingId: ID of the current ranking (for redirect)
+        
+    Returns:
+        Redirect to trainer page for the ranking
+        
+    Raises:
+        Exception: Logs error if player cannot be deleted
+    """
     try:
-        player = db.session.get(Players, playerId)
+        # Extract and validate form parameters
+        playerId = request.form.get('player_id')
+        rankingId = request.form.get('rankingId')
+        
+        # Validate required parameters
+        if not rankingId:
+            log(3, "player_delete", "Missing rankingId parameter")
+            return redirect('/trainer/1')  # Fallback to default ranking
+            
+        rankingId = int(rankingId)
+        
+        if not playerId:
+            log(3, "player_delete", f"Could not delete player because the submitted Id was empty")
+            return redirect(f'/trainer/{rankingId}')
+            
+        playerId = int(playerId)
+        
+        # Delete the player entirely
+        deletePlayer(playerId)
+        log(1, "player_delete", f"Deleted Player {playerId}")
+        
+    except ValueError as e:
+        log(4, "player_delete", f"Invalid parameter values for player deletion: {e}")
     except Exception as e:
-        log(4, "player_delete", f"Could not get Player from playerId: {playerId}, because of {e}")
-        return redirect('/trainer') #WIP: Add error message
+        log(4, "player_delete", f"Could not delete Player {playerId}: {e}")
     
-    try:
-        playerRankingEntry = PlayerRankings.query.filter_by(playerId=playerId, rankingId=rankingId).first()
-    except Exception as e:
-        log(3, "player_delete", f"Could not find ranking entry for player {player.name}({playerId}) in ranking {rankingId}, because of {e}")
-        return redirect(f'/trainer/{rankingId}') #WIP: Add error message
-
-    try:
-        db.session.delete(player)
-        db.session.delete(playerRankingEntry)
-        db.session.commit()
-    except Exception as e:
-        log(4, "player_delete", f"Could not delete Player {player.name}({playerId}), because of {e}")
-        return redirect('/trainer') #WIP: Add error message
-    
-    log(1, "player_delete", f"Deleted Player {player.name}({playerId})")
-    return redirect('/trainer')
+    return redirect(f'/trainer/{rankingId}')
 
 if __name__ == '__main__':
-    with app.app_context():
+    """
+    Application entry point that initializes the database and starts the Flask development server.
+    Creates test data if the database is empty to facilitate development and testing.
+    """
+    try:
+        with app.app_context():
+            # Note: Database table creation is now handled by Flask-Migrate
+            # Only add test data if none exists to avoid duplicates
+            
+            # Create test players if database is empty
+            if Players.query.count() == 0:
+                log(1, "startup", "Creating test players")
+                test_players = [
+                    Players(name="Alice", wins=12, losses=3, setsWon=25, setsLost=10, ranking=1, points=27),
+                    Players(name="Bob", wins=10, losses=4, setsWon=22, setsLost=11, ranking=2, points=24),
+                    Players(name="Charlie", wins=8, losses=6, setsWon=18, setsLost=15, ranking=3, points=20),
+                ]
+                for player in test_players:
+                    db.session.add(player)
+                db.session.commit()
+                log(1, "startup", f"Created {len(test_players)} test players")
 
-        # Note: db.create_all() is now handled by Flask-Migrate
-        # Only add test data if none exists
-        if Players.query.count() == 0:
-            test_players = [
-                Players(name="Alice", wins=12, losses=3, setsWon=25, setsLost=10, ranking=1, points=27),
-                Players(name="Bob", wins=10, losses=4, setsWon=22, setsLost=11, ranking=2, points=24),
-                Players(name="Charlie", wins=8, losses=6, setsWon=18, setsLost=15, ranking=3, points=20),
-            ]
-            for player in test_players:
-                db.session.add(player)
-            db.session.commit()
+            # Create test rankings if database is empty
+            if Rankings.query.count() == 0:
+                log(1, "startup", "Creating test rankings")
+                test_rankings = [
+                    Rankings(name="Junior"),
+                    Rankings(name="Hobby"),
+                    Rankings(name="Turnier")
+                ]
+                for ranking in test_rankings:
+                    db.session.add(ranking)
+                db.session.commit()
+                log(1, "startup", f"Created {len(test_rankings)} test rankings")
 
-        if Rankings.query.count() == 0:
-            test_rankings = [
-                Rankings(name="Junior"),
-                Rankings(name="Hobby"),
-                Rankings(name="Turnier")
-            ]
-            for ranking in test_rankings:
-                db.session.add(ranking)
-            db.session.commit()
-
-        # Add PlayerRankings for each player in each ranking
-        if PlayerRankings.query.count() == 0:
-            players = Players.query.all()
-            rankings = Rankings.query.all()
-            for ranking in rankings:
-                for player in players:
-                    db.session.add(
-                        PlayerRankings(
+            # Create PlayerRankings for each player in each ranking if none exist
+            if PlayerRankings.query.count() == 0:
+                log(1, "startup", "Creating test player rankings")
+                players = Players.query.all()
+                rankings = Rankings.query.all()
+                
+                ranking_entries_created = 0
+                for ranking in rankings:
+                    for player in players:
+                        player_ranking = PlayerRankings(
                             playerId=player.id,
                             rankingId=ranking.id,
                             ranking=player.ranking,
@@ -452,7 +560,25 @@ if __name__ == '__main__':
                             lastRankingChanged=datetime.now(timezone.utc),
                             points=player.points
                         )
-                    )
-            db.session.commit()
+                        db.session.add(player_ranking)
+                        ranking_entries_created += 1
+                
+                db.session.commit()
+                log(1, "startup", f"Created {ranking_entries_created} player ranking entries")
 
-    app.run(debug=True, port=5001, host='0.0.0.0')
+            # Log startup completion within the application context
+            log(1, "startup", "Database initialization completed successfully")
+
+        # Start the Flask development server (outside app context, use print instead of log)
+        print("Starting Flask application on port 5001...")
+        app.run(debug=True, port=5001, host='0.0.0.0')
+        
+    except Exception as e:
+        # Use print instead of log since we're outside application context
+        print(f"Critical error during application startup: {e}")
+        # Try to log within app context if possible
+        try:
+            with app.app_context():
+                log(4, "startup", f"Failed to start application: {e}")
+        except Exception as log_error:
+            print(f"Could not log error to database: {log_error}")

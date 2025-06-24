@@ -29,18 +29,41 @@
 /* Active Matches Display Modes - Grid only */
 .activeMatches.display-grid .carousel-inner {
     display: grid !important;
-    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 0.5rem;
+}
+
+/* Force exactly 2 columns for iPad landscape and similar widths */
+@media (min-width: 700px) and (max-width: 1200px) {
+    .activeMatches.display-grid .carousel-inner {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
 }
 
 .activeMatches.display-grid .carousel-item {
     display: block !important;
     opacity: 1 !important;
     transform: none !important;
+    /* Optional: shrink padding for smaller cards */
+    padding: 0.5rem;
 }
 
-.activeMatches.display-grid .carousel-item.active {
-    display: block !important;
+.activeMatches.display-grid .bg-light.p-3.rounded.text-center {
+    padding: 1rem !important; /* Reduce padding inside the card */
+    font-size: 0.95rem;       /* Slightly smaller text */
+}
+
+/* Limit table width and center it in grid view */
+.activeMatches.display-grid .table-responsive {
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Optionally, reduce table font size for grid view */
+.activeMatches.display-grid table {
+    font-size: 0.95rem;
 }
 
 /* Hide carousel controls in non-carousel modes */

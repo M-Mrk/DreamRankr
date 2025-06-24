@@ -142,12 +142,7 @@ function initializeChallengeSystem() {
     } else {
       this.setCustomValidity("");
       if (validOption) {
-        // Set defender ID based on selected player
-        const defenderId =
-          validOption.getAttribute("data-player-id") ||
-          allPlayers.find((p) => p.name === currentValue)?.id ||
-          "";
-        defenderIdInput.value = defenderId;
+        defenderIdInput.value = validOption.getAttribute("data-player-id");
       } else {
         defenderIdInput.value = "";
       }
@@ -511,8 +506,12 @@ function initializeEditPlayerModal() {
       const playerSetsWon = button.getAttribute("data-player-sets-won");
       const playerSetsLost = button.getAttribute("data-player-sets-lost");
       const playerBonus = button.getAttribute("data-player-bonus");
-      const playerLogicOperator = button.getAttribute("data-player-logic-operator");
-      const playerLimitRanking = button.getAttribute("data-player-limit-ranking");
+      const playerLogicOperator = button.getAttribute(
+        "data-player-logic-operator"
+      );
+      const playerLimitRanking = button.getAttribute(
+        "data-player-limit-ranking"
+      );
 
       // Populate form fields
       document.getElementById("editPlayerId").value = playerId;
@@ -523,8 +522,10 @@ function initializeEditPlayerModal() {
       document.getElementById("editPlayerSetsWon").value = playerSetsWon;
       document.getElementById("editPlayerSetsLost").value = playerSetsLost;
       document.getElementById("editBonus").value = playerBonus || "";
-      document.getElementById("editLogicOperator").value = playerLogicOperator || "";
-      document.getElementById("editLimitRanking").value = playerLimitRanking || "";
+      document.getElementById("editLogicOperator").value =
+        playerLogicOperator || "";
+      document.getElementById("editLimitRanking").value =
+        playerLimitRanking || "";
 
       // Update modal title
       document.getElementById(
@@ -938,39 +939,51 @@ function initializeAddPlayerOffcanvasUI() {
   const backNew = document.getElementById("backToChoiceFromNew");
   const backImport = document.getElementById("backToChoiceFromImport");
 
-  if (btnNew) btnNew.addEventListener("click", function () {
-    choiceSection.style.display = "none";
-    addForm.style.display = "block";
-    importForm.style.display = "none";
-  });
-  if (btnImport) btnImport.addEventListener("click", function () {
-    choiceSection.style.display = "none";
-    addForm.style.display = "none";
-    importForm.style.display = "block";
-  });
-  if (backNew) backNew.addEventListener("click", function () {
-    choiceSection.style.display = "block";
-    addForm.style.display = "none";
-    importForm.style.display = "none";
-  });
-  if (backImport) backImport.addEventListener("click", function () {
-    choiceSection.style.display = "block";
-    addForm.style.display = "none";
-    importForm.style.display = "none";
-  });
+  if (btnNew)
+    btnNew.addEventListener("click", function () {
+      choiceSection.style.display = "none";
+      addForm.style.display = "block";
+      importForm.style.display = "none";
+    });
+  if (btnImport)
+    btnImport.addEventListener("click", function () {
+      choiceSection.style.display = "none";
+      addForm.style.display = "none";
+      importForm.style.display = "block";
+    });
+  if (backNew)
+    backNew.addEventListener("click", function () {
+      choiceSection.style.display = "block";
+      addForm.style.display = "none";
+      importForm.style.display = "none";
+    });
+  if (backImport)
+    backImport.addEventListener("click", function () {
+      choiceSection.style.display = "block";
+      addForm.style.display = "none";
+      importForm.style.display = "none";
+    });
 }
 
 function initializeDeleteRemovePlayerModal() {
   // Delete/Remove Player logic
   const deletePlayerBtn = document.getElementById("deletePlayerBtn");
-  const deleteRemoveChoiceModal = new bootstrap.Modal(document.getElementById("deleteRemoveChoiceModal"));
-  const deleteRemovePlayerName = document.getElementById("deleteRemovePlayerName");
+  const deleteRemoveChoiceModal = new bootstrap.Modal(
+    document.getElementById("deleteRemoveChoiceModal")
+  );
+  const deleteRemovePlayerName = document.getElementById(
+    "deleteRemovePlayerName"
+  );
   const editPlayerName = document.getElementById("editPlayerName");
   const deletePlayerId = document.getElementById("deletePlayerId");
   const editPlayerId = document.getElementById("editPlayerId");
   const removePlayerId = document.getElementById("removePlayerId");
-  const confirmDeletePlayerBtn = document.getElementById("confirmDeletePlayerBtn");
-  const confirmRemovePlayerBtn = document.getElementById("confirmRemovePlayerBtn");
+  const confirmDeletePlayerBtn = document.getElementById(
+    "confirmDeletePlayerBtn"
+  );
+  const confirmRemovePlayerBtn = document.getElementById(
+    "confirmRemovePlayerBtn"
+  );
   const removePlayerForm = document.getElementById("removePlayerForm");
 
   if (deletePlayerBtn) {
