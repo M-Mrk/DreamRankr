@@ -927,6 +927,83 @@ function showToast(message, type = "primary") {
   toast.addEventListener("hidden.bs.toast", () => toast.remove());
 }
 
+// New functions for Add Player Offcanvas and Delete/Remove Player Modal
+function initializeAddPlayerOffcanvasUI() {
+  // Show correct form based on choice
+  const choiceSection = document.getElementById("addPlayerChoiceSection");
+  const addForm = document.getElementById("addPlayerForm");
+  const importForm = document.getElementById("importPlayerForm");
+  const btnNew = document.getElementById("chooseNewPlayerBtn");
+  const btnImport = document.getElementById("chooseImportPlayerBtn");
+  const backNew = document.getElementById("backToChoiceFromNew");
+  const backImport = document.getElementById("backToChoiceFromImport");
+
+  if (btnNew) btnNew.addEventListener("click", function () {
+    choiceSection.style.display = "none";
+    addForm.style.display = "block";
+    importForm.style.display = "none";
+  });
+  if (btnImport) btnImport.addEventListener("click", function () {
+    choiceSection.style.display = "none";
+    addForm.style.display = "none";
+    importForm.style.display = "block";
+  });
+  if (backNew) backNew.addEventListener("click", function () {
+    choiceSection.style.display = "block";
+    addForm.style.display = "none";
+    importForm.style.display = "none";
+  });
+  if (backImport) backImport.addEventListener("click", function () {
+    choiceSection.style.display = "block";
+    addForm.style.display = "none";
+    importForm.style.display = "none";
+  });
+}
+
+function initializeDeleteRemovePlayerModal() {
+  // Delete/Remove Player logic
+  const deletePlayerBtn = document.getElementById("deletePlayerBtn");
+  const deleteRemoveChoiceModal = new bootstrap.Modal(document.getElementById("deleteRemoveChoiceModal"));
+  const deleteRemovePlayerName = document.getElementById("deleteRemovePlayerName");
+  const editPlayerName = document.getElementById("editPlayerName");
+  const deletePlayerId = document.getElementById("deletePlayerId");
+  const editPlayerId = document.getElementById("editPlayerId");
+  const removePlayerId = document.getElementById("removePlayerId");
+  const confirmDeletePlayerBtn = document.getElementById("confirmDeletePlayerBtn");
+  const confirmRemovePlayerBtn = document.getElementById("confirmRemovePlayerBtn");
+  const removePlayerForm = document.getElementById("removePlayerForm");
+
+  if (deletePlayerBtn) {
+    deletePlayerBtn.addEventListener("click", function () {
+      if (deleteRemovePlayerName && editPlayerName) {
+        deleteRemovePlayerName.textContent = editPlayerName.value;
+      }
+      if (editPlayerId && deletePlayerId) {
+        deletePlayerId.value = editPlayerId.value;
+      }
+      if (editPlayerId && removePlayerId) {
+        removePlayerId.value = editPlayerId.value;
+      }
+      deleteRemoveChoiceModal.show();
+    });
+  }
+
+  if (confirmDeletePlayerBtn) {
+    confirmDeletePlayerBtn.addEventListener("click", function () {
+      document.querySelector('form[action="/trainer/player_delete"]').submit();
+    });
+  }
+
+  if (confirmRemovePlayerBtn) {
+    confirmRemovePlayerBtn.addEventListener("click", function () {
+      if (editPlayerId && removePlayerId) {
+        removePlayerId.value = editPlayerId.value;
+      }
+      removePlayerForm.submit();
+    });
+  }
+}
+
 // Initialize all functionality when DOM is fully loaded
 document.addEventListener("DOMContentLoaded", function () {
   // Set up click handlers for player table rows
@@ -945,6 +1022,8 @@ document.addEventListener("DOMContentLoaded", function () {
   initializeActiveMatchesSettings();
   initializeEditPlayerModal();
   initializeAddPlayerForm(); // Add this line
+  initializeAddPlayerOffcanvasUI();
+  initializeDeleteRemovePlayerModal();
 
   // Initialize Bootstrap tooltips if any exist
   const tooltipTriggerList = [].slice.call(
