@@ -5,9 +5,7 @@ db = SQLAlchemy()
 
 class Players(db.Model): #Actual list of Players
     id = db.Column(db.Integer, primary_key=True)
-    ranking = db.Column(db.Integer, nullable=False)
     name = db.Column(db.String(100), nullable=False)
-    points = db.Column(db.Integer, nullable=False) #1 Match = +1 Point and 1 Win = +1 Point
     wins = db.Column(db.Integer, nullable=False)
     losses = db.Column(db.Integer, nullable=False)
     setsWon = db.Column(db.Integer, nullable=False)
@@ -15,19 +13,22 @@ class Players(db.Model): #Actual list of Players
     lastRanking = db.Column(db.Integer, nullable=True) #To indicate changes in the rankings
     lastRankingChanged = db.Column(db.DateTime, nullable=True) #When the ranking change occurred
 
-# class Rankings(db.Model): #List of all currently ongoing Rankings
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(50))
+class Rankings(db.Model): #List of all currently ongoing Rankings
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50))
+    description = db.Column(db.Text)
 
-# class PlayerRankings(db.Model): #Table with one row per player per ranking - tracks each player's position and points in different rankings
-#     id = db.Column(db.Integer, primary_key=True)
-#     playerId = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
-#     rankingId = db.Column(db.Integer, db.ForeignKey('rankings.id'), nullable=False)
-#     ranking = db.Column(db.Integer, nullable=False)
-#     lastRanking = db.Column(db.Integer, nullable=True) #To indicate changes in the rankings
-#     lastRankingChanged = db.Column(db.DateTime, nullable=True) #When the ranking change occurred
-#     points = db.Column(db.Integer, nullable=False)
-#     __table_args__ = (db.UniqueConstraint('playerId', 'rankingId'))
+class PlayerRankings(db.Model): #Table with one row per player per ranking - tracks each player's position and points in different rankings
+    id = db.Column(db.Integer, primary_key=True)
+    playerId = db.Column(db.Integer, db.ForeignKey('players.id'), nullable=False)
+    rankingId = db.Column(db.Integer, db.ForeignKey('rankings.id'), nullable=False)
+    ranking = db.Column(db.Integer, nullable=False)
+    lastRanking = db.Column(db.Integer, nullable=True) #To indicate changes in the rankings
+    lastRankingChanged = db.Column(db.DateTime, nullable=True) #When the ranking change occurred
+    points = db.Column(db.Integer, nullable=False)
+    __table_args__ = (
+        db.UniqueConstraint('playerId', 'rankingId', name='uq_player_ranking'),
+    )
 
 class PlayerBonuses(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -45,6 +46,7 @@ class OnGoingMatches(db.Model): #List of all curent matches
     defenderId = db.Column(db.Integer, nullable=False)
     defenderBonus = db.Column(db.Integer)
     timeStarted = db.Column(db.DateTime, nullable=False)
+    rankingId = db.Column(db.Integer, db.ForeignKey('rankings.id'), nullable=False)
 
 class FinishedMatches(db.Model): #List of all finished matches
     id = db.Column(db.Integer, primary_key=True)
@@ -58,6 +60,7 @@ class FinishedMatches(db.Model): #List of all finished matches
     winnerId = db.Column(db.Integer, nullable=False)
     challengerScore = db.Column(db.Integer, nullable=True)
     defenderScore = db.Column(db.Integer, nullable=True)
+    rankingId = db.Column(db.Integer, db.ForeignKey('rankings.id'), nullable=False)
 
 class LogEntries(db.Model): #List of Log Entries
     id = db.Column(db.Integer, primary_key=True)

@@ -1,4 +1,4 @@
-from db import db, Players, OnGoingMatches, PlayerBonuses
+from db import db, Players, OnGoingMatches, PlayerBonuses, PlayerRankings
 from logger import log
 
 class Bonus:
@@ -38,9 +38,20 @@ def getBonus(match):
     challengerBonus = 0
     defenderBonus = 0
 
-    if challengerBonusEntry and compareFromStr(defender.ranking, challengerBonusEntry.logicOperator, challengerBonusEntry.limitRanking):
+    # Get the correct rankings for the specific ranking context
+    challengerRanking = PlayerRankings.query.filter_by(playerId=match.challengerId, rankingId=match.rankingId).first()
+    defenderRanking = PlayerRankings.query.filter_by(playerId=match.defenderId, rankingId=match.rankingId).first()
+
+    if not challengerRanking or not defenderRanking:
+        log(3, 'getBonus', f"Could not find ranking for challenger {match.challengerId} or defender {match.defenderId} in ranking {match.rankingId}")
+        return Bonus()
+
+    challenger_rank = challengerRanking.ranking
+    defender_rank = defenderRanking.ranking
+
+    if challengerBonusEntry and compareFromStr(defender_rank, challengerBonusEntry.logicOperator, challengerBonusEntry.limitRanking):
         challengerBonus = challengerBonusEntry.bonus
-    if defenderBonusEntry and compareFromStr(challenger.ranking, defenderBonusEntry.logicOperator, defenderBonusEntry.limitRanking):
+    if defenderBonusEntry and compareFromStr(challenger_rank, defenderBonusEntry.logicOperator, defenderBonusEntry.limitRanking):
         defenderBonus = defenderBonusEntry.bonus
     
     return Bonus(challenger=challengerBonus, defender=defenderBonus)

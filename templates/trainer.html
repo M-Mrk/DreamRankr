@@ -24,6 +24,7 @@
                             required>
                         <input type="hidden" id="challenger-id" name="challenger_id">
                         <input type="hidden" id="defender-id" name="defender_id">
+                        <input type="hidden" id="ranking-id" name="rankingId" value="{{ rankingId }}">
                         <datalist id="list-defender">
                             <!-- Options will be populated dynamically -->
                         </datalist>
@@ -81,6 +82,7 @@
                     </div>
                     <input type="hidden" id="match-id" name="match_id">
                     <input type="hidden" id="winner-id" name="winner_id">
+                    <input type="hidden" id="ranking-id" name="rankingId" value="{{ rankingId }}">
                 </form>
             </div>
             <div class="modal-footer">
@@ -208,14 +210,22 @@
                     </div>
                     
                     <input type="hidden" id="editPlayerId" name="player_id">
+                    <input type="hidden" id="ranking-id" name="rankingId" value="{{ rankingId }}">
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form method="post" action="/trainer/player_delete" class="me-auto">
+                <form method="post" action="/trainer/player_delete" class="me-auto d-inline">
                     <input type="hidden" name="player_id" id="deletePlayerId">
-                    <button type="button" class="btn btn-outline-danger" id="deletePlayerBtn">Delete Player</button>
+                    <input type="hidden" id="ranking-id" name="rankingId" value="{{ rankingId }}">
+                    <!-- Changed: Delete Player button now triggers a choice modal -->
+                    <button type="button" class="btn btn-outline-danger" id="deletePlayerBtn">Delete/Remove Player</button>
                     <button type="submit" class="btn btn-danger d-none" id="confirmDeleteBtn">Confirm Delete</button>
+                </form>
+                <!-- New: Remove Player form, hidden by default -->
+                <form method="post" action="/trainer/player_remove" class="d-inline" id="removePlayerForm" style="display:none;">
+                    <input type="hidden" name="player_id" id="removePlayerId">
+                    <input type="hidden" id="ranking-id" name="rankingId" value="{{ rankingId }}">
                 </form>
                 <button type="button" class="btn btn-primary" id="savePlayerBtn">Save Changes</button>
             </div>
@@ -242,6 +252,27 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-danger" id="confirmDeletePlayer" onclick="startSpinner(confirmDeletePlayerModalBody)">Delete Player</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New: Delete/Remove Choice Modal -->
+<div class="modal fade" id="deleteRemoveChoiceModal" tabindex="-1" aria-labelledby="deleteRemoveChoiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteRemoveChoiceModalLabel">Delete or Remove Player?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Do you want to <strong>delete</strong> this player from the database entirely, or just <strong>remove</strong> them from this ranking?</p>
+                <p class="mb-0">Player: <span id="deleteRemovePlayerName" class="fw-bold"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeletePlayerBtn">Delete Player</button>
+                <button type="button" class="btn btn-warning" id="confirmRemovePlayerBtn">Remove from Ranking</button>
             </div>
         </div>
     </div>
@@ -485,12 +516,22 @@
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
-        <form method="post" action="/trainer/player_add" id="addPlayerForm">
+        <!-- Step 1: Choose Add or Import -->
+        <div id="addPlayerChoiceSection">
+            <div class="mb-4">
+                <label class="form-label"><strong>How do you want to add a player?</strong></label>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary" id="chooseNewPlayerBtn">Completely New Player</button>
+                    <button type="button" class="btn btn-secondary" id="chooseImportPlayerBtn">Import Existing Signup</button>
+                </div>
+            </div>
+        </div>
+        <!-- Step 2a: New Player Form -->
+        <form method="post" action="/trainer/player_add" id="addPlayerForm" style="display: none;">
             <div class="mb-3">
                 <label for="playerName" class="form-label">Player Name</label>
                 <input type="text" class="form-control" id="playerName" name="name" placeholder="Enter player name" required>
             </div>
-            
             <div class="mb-3">
                 <div class="form-check form-switch mb-2">
                     <input class="form-check-input" type="checkbox" id="addBonusToggle">
@@ -523,8 +564,27 @@
                     </div>
                 </div>
             </div>
-            
             <button type="submit" class="btn btn-primary w-100">Add Player</button>
+            <button type="button" class="btn btn-link w-100 mt-2" id="backToChoiceFromNew">Back</button>
+
+            <input type="hidden" id="ranking-id" name="rankingId" value="{{ rankingId }}">
+        </form>
+        <!-- Step 2b: Import Player Form -->
+        <form method="post" action="/trainer/player_import" id="importPlayerForm" style="display: none;">
+            <div class="mb-3">
+                <label for="importPlayerSelect" class="form-label">Select Existing Signup</label>
+                <select class="form-select" id="importPlayerSelect" name="import_player_id" required>
+                    <option value="">Choose player...</option>
+                    {% for signup in allPlayers %}
+                        {% if signup.id not in players|map(attribute='id')|list %}
+                            <option value="{{ signup.id }}">{{ signup.name }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-success w-100">Import Player</button>
+            <button type="button" class="btn btn-link w-100 mt-2" id="backToChoiceFromImport">Back</button>
+            <input type="hidden" id="ranking-id" name="rankingId" value="{{ rankingId }}">
         </form>
     </div>
 </div>
@@ -565,4 +625,85 @@
         <button type="button" class="btn btn-primary w-100" id="applySettings">Apply Settings</button>
     </div>
 </div>
+
+<script>
+// Show correct form based on choice
+document.addEventListener("DOMContentLoaded", function () {
+    const choiceSection = document.getElementById("addPlayerChoiceSection");
+    const addForm = document.getElementById("addPlayerForm");
+    const importForm = document.getElementById("importPlayerForm");
+    const btnNew = document.getElementById("chooseNewPlayerBtn");
+    const btnImport = document.getElementById("chooseImportPlayerBtn");
+    const backNew = document.getElementById("backToChoiceFromNew");
+    const backImport = document.getElementById("backToChoiceFromImport");
+
+    if (btnNew) btnNew.addEventListener("click", function () {
+        choiceSection.style.display = "none";
+        addForm.style.display = "block";
+        importForm.style.display = "none";
+    });
+    if (btnImport) btnImport.addEventListener("click", function () {
+        choiceSection.style.display = "none";
+        addForm.style.display = "none";
+        importForm.style.display = "block";
+    });
+    if (backNew) backNew.addEventListener("click", function () {
+        choiceSection.style.display = "block";
+        addForm.style.display = "none";
+        importForm.style.display = "none";
+    });
+    if (backImport) backImport.addEventListener("click", function () {
+        choiceSection.style.display = "block";
+        addForm.style.display = "none";
+        importForm.style.display = "none";
+    });
+});
+document.addEventListener("DOMContentLoaded", function () {
+    // Delete/Remove Player logic
+    const deletePlayerBtn = document.getElementById("deletePlayerBtn");
+    const deleteRemoveChoiceModal = new bootstrap.Modal(document.getElementById("deleteRemoveChoiceModal"));
+    const deleteRemovePlayerName = document.getElementById("deleteRemovePlayerName");
+    const editPlayerName = document.getElementById("editPlayerName");
+    const deletePlayerId = document.getElementById("deletePlayerId");
+    const editPlayerId = document.getElementById("editPlayerId"); // <-- get the correct player id
+    const removePlayerId = document.getElementById("removePlayerId");
+    const confirmDeletePlayerBtn = document.getElementById("confirmDeletePlayerBtn");
+    const confirmRemovePlayerBtn = document.getElementById("confirmRemovePlayerBtn");
+    const removePlayerForm = document.getElementById("removePlayerForm");
+
+    if (deletePlayerBtn) {
+        deletePlayerBtn.addEventListener("click", function () {
+            // Show modal with player name
+            if (deleteRemovePlayerName && editPlayerName) {
+                deleteRemovePlayerName.textContent = editPlayerName.value;
+            }
+            // Set the player id for both delete and remove forms
+            if (editPlayerId && deletePlayerId) {
+                deletePlayerId.value = editPlayerId.value;
+            }
+            if (editPlayerId && removePlayerId) {
+                removePlayerId.value = editPlayerId.value;
+            }
+            deleteRemoveChoiceModal.show();
+        });
+    }
+
+    if (confirmDeletePlayerBtn) {
+        confirmDeletePlayerBtn.addEventListener("click", function () {
+            // Submit the delete form
+            document.querySelector('form[action="/trainer/player_delete"]').submit();
+        });
+    }
+
+    if (confirmRemovePlayerBtn) {
+        confirmRemovePlayerBtn.addEventListener("click", function () {
+            // Set player_id for remove form and submit
+            if (editPlayerId && removePlayerId) {
+                removePlayerId.value = editPlayerId.value;
+            }
+            removePlayerForm.submit();
+        });
+    }
+});
+</script>
 {% endblock %}
