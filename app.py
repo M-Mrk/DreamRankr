@@ -1,15 +1,27 @@
-from flask import Flask, render_template, request, redirect
+#flask
+from flask import Flask, render_template, request, redirect, session, flash
 from flask_migrate import Migrate
-from db import db, Players, OnGoingMatches, FinishedMatches, PlayerBonuses, Rankings, PlayerRankings
+
+#Database
+from db import db, Players, PlayerBonuses, Rankings, PlayerRankings, Authentication
+
+#TT Ranking files
 from bonuses import updateOrCreatePlayerBonus, validateBonusParameters
-from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, checkIfChangedAndUpdate, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes
+from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes
+from authentication import requiresViewer, requiresTrainer, authenticate
 from logger import log
-from datetime import datetime, timezone
+
+#Third party libaries
+from datetime import datetime, timezone, timedelta
+import os
+from werkzeug.security import generate_password_hash
 
 # Initialize Flask application with database configuration
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Main.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.secret_key = os.environ.get('SECRET_KEY', 'K8sZt^cH6Brf@4seK&6C2kNqa6a7ve')
+app.permanent_session_lifetime = timedelta(minutes=30)  # 30 minute timeout
 
 # Initialize database and migration support
 db.init_app(app)
@@ -21,7 +33,20 @@ from playerStats import changeStats
 # Add datetime utility to Jinja template globals for use in templates
 app.jinja_env.globals['now'] = datetime.utcnow
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'GET':
+        return render_template('login.html')
+    elif request.method == 'POST':
+        password = request.form.get('password')
+        print(password)
+        if authenticate(password, request):
+            return redirect('/')
+        else:
+            return redirect('/login')
+
 @app.route('/')
+@requiresViewer
 def home():
     """
     Renders the home page displaying all available rankings.
@@ -43,6 +68,7 @@ def home():
         return render_template('index.html', rankings=[])
 
 @app.route('/view/<int:rankingId>')
+@requiresViewer
 def view(rankingId):
     """
     Renders the viewer page for a specific ranking.
@@ -67,6 +93,7 @@ def view(rankingId):
         return render_template('viewer.html', players=[])
 
 @app.route('/trainer/<int:rankingId>')
+@requiresTrainer
 def trainer(rankingId):
     """
     Renders the trainer page for managing a specific ranking.
@@ -117,6 +144,7 @@ def trainer(rankingId):
                              allPlayers=[])
 
 @app.route('/trainer/start_match', methods=['POST'])
+@requiresTrainer
 def start_match():
     """
     Initiates a new match between two players in a ranking.
@@ -167,6 +195,7 @@ def start_match():
     return redirect(f'/trainer/{rankingId}')
 
 @app.route('/trainer/finish_match', methods=['POST'])
+@requiresTrainer
 def finish_match():
     """
     Completes an ongoing match and records the results.
@@ -224,6 +253,7 @@ def finish_match():
     return redirect(f'/trainer/{rankingId}')
 
 @app.route('/trainer/player_add', methods=['POST'])
+@requiresTrainer
 def player_add():
     """
     Creates a new player and adds them to a ranking with optional bonus settings.
@@ -280,6 +310,7 @@ def player_add():
     return redirect(f'/trainer/{rankingId}')
 
 @app.route('/trainer/player_import', methods=['POST'])
+@requiresTrainer
 def player_import():
     """
     Imports an existing player into a ranking.
@@ -325,6 +356,7 @@ def player_import():
     return redirect(f'/trainer/{rankingId}')
 
 @app.route('/trainer/player_edit', methods=['POST'])
+@requiresTrainer
 def player_edit():
     """
     Updates player information including attributes, ranking, and bonus settings.
@@ -418,6 +450,7 @@ def player_edit():
     return redirect(f'/trainer/{rankingId}')
 
 @app.route('/trainer/player_remove', methods=['POST'])
+@requiresTrainer
 def player_remove():
     """
     Removes a player from a specific ranking without deleting the player entirely.
@@ -463,6 +496,7 @@ def player_remove():
     return redirect(f'/trainer/{rankingId}')
 
 @app.route('/trainer/player_delete', methods=['POST'])
+@requiresTrainer
 def player_delete():
     """
     Permanently deletes a player from the entire system.
@@ -565,6 +599,22 @@ if __name__ == '__main__':
                 
                 db.session.commit()
                 log(1, "startup", f"Created {ranking_entries_created} player ranking entries")
+
+            if Authentication.query.count() == 0:
+                viewerAuthentication = Authentication(
+                    name = 'viewer',
+                    passwordHash = generate_password_hash("viewerPassword2")
+                )
+
+                trainerAuthentication = Authentication(
+                    name = 'trainer',
+                    passwordHash = generate_password_hash("trainerPassword3")
+                )
+
+                db.session.add(viewerAuthentication)
+                db.session.add(trainerAuthentication)
+
+                db.session.commit()
 
             # Log startup completion within the application context
             log(1, "startup", "Database initialization completed successfully")

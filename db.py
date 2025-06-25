@@ -97,3 +97,11 @@ class LogEntries(db.Model):
     level = db.Column(db.String(15))        # Log level (Debug, Information, Warning, Error, etc.)
     origin = db.Column(db.String(25))       # Function or module that generated the log
     message = db.Column(db.Text)            # Log message content
+
+class Authentication(db.Model):
+    """
+    System table for passwords
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(15), nullable=False)
+    passwordHash = db.Column(db.String(128), nullable=False)
