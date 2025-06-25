@@ -1,11 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% if session['permissionLevel'] == "trainer" %}
-    <div class="alert alert-success" role="alert">
-        <strong>Logged in as Trainer</strong>
-    </div>
-{% endif %}
 <div class="container-fluid px-3 mt-3">
     <h1 class="mb-4 text-center">Currently Active Rankings</h1>
     
@@ -23,9 +18,15 @@
                             No description available.
                         {% endif %}
                     </p>
-                    <a href="{{ url_for('view', rankingId=ranking.id) }}" class="btn btn-primary mt-auto">
-                        View Ranking
-                    </a>
+                    {% if session['permissonLevel'] == trainer %}
+                        <a href="{{ url_for('trainer', rankingId=ranking.id) }}" class="btn btn-primary mt-auto">
+                            View Ranking
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('view', rankingId=ranking.id) }}" class="btn btn-primary mt-auto">
+                            View Ranking
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -50,13 +51,15 @@
                 <div class="d-grid gap-2 d-md-flex justify-content-md-center">
                     <div class="btn-group-vertical d-md-none w-100" role="group" aria-label="Sort options">
                         <button type="button" class="btn btn-outline-primary active" id="sortWinsMobile" onclick="sortPlayers('wins')">
-                            🏆 Sort by Wins
+                            <span class="material-symbols-outlined">trophy</span>
+                            <span> Sort by Wins</span>
                         </button>
                         <button type="button" class="btn btn-outline-primary" id="sortWinRateMobile" onclick="sortPlayers('winRate')">
-                            📊 Sort by Win %
+                            <span class="material-symbols-outlined">bar_chart</span> Sort by Win %
                         </button>
                         <button type="button" class="btn btn-outline-primary" id="sortSetsMobile" onclick="sortPlayers('sets')">
-                            🎯 Sort by Sets Won
+                            <span class="material-symbols-outlined">scoreboard</span>
+                             Sort by Sets Won
                         </button>
                     </div>
                     <div class="btn-group d-none d-md-flex" role="group" aria-label="Sort options">
