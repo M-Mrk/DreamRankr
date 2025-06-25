@@ -82,3 +82,83 @@
 .carousel-control-next-icon {
     filter: invert(1);
 }
+
+/* Podium Styles */
+.podium-container {
+    padding: 2rem 0;
+}
+
+.podium-position {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.podium-player {
+    background: white;
+    border: 2px solid #dee2e6;
+    border-radius: 10px;
+    padding: 1.5rem 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.podium-player:hover {
+    transform: translateY(-5px);
+}
+
+.podium-base {
+    height: 60px;
+    border-radius: 10px 10px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+    margin: 0 auto;
+    width: 80%;
+}
+
+.podium-first .podium-player {
+    border-color: #ffd700;
+    background: linear-gradient(135deg, #fff9c4, #ffffff);
+}
+
+.podium-base-first {
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    height: 80px;
+}
+
+.podium-second .podium-player {
+    border-color: #c0c0c0;
+    background: linear-gradient(135deg, #f8f9fa, #ffffff);
+}
+
+.podium-base-second {
+    background: linear-gradient(135deg, #c0c0c0, #e2e2e2);
+    height: 60px;
+}
+
+.podium-third .podium-player {
+    border-color: #cd7f32;
+    background: linear-gradient(135deg, #fdf2e9, #ffffff);
+}
+
+.podium-base-third {
+    background: linear-gradient(135deg, #cd7f32, #deb887);
+    height: 40px;
+}
+
+/* Responsive podium */
+@media (max-width: 768px) {
+    .podium-container .row {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .podium-container .col-md-3 {
+        max-width: 300px;
+        margin-bottom: 1rem;
+    }
+}
