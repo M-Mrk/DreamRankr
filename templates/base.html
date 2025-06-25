@@ -17,10 +17,20 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('home') }}">TT Rankings</a>
+            <div>
+                <a class="navbar-brand" href="{{ url_for('home') }}">TT Rankings</a>
+                {% if session['permissionLevel'] == "trainer" %}
+                    <span class="badge text-bg-info fs-4">Trainer</span>
+                {% endif %}
+                </div>
             <div class="navbar-nav">
-                <a class="nav-link" href="{{ url_for('home') }}">Rankings</a>
-                <a class="nav-link" href="{{ url_for('trainer', rankingId=request.view_args.get('id')) if request and request.view_args and request.view_args.get('id') else url_for('trainer', rankingId=1) }}">Trainer</a>
+                {% if session['permissionLevel'] == "trainer" %}
+                    <a class="nav-link" href="{{ url_for('home') }}">Rankings</a>
+                    <a class="nav-link" href="{{ url_for('trainer', rankingId=request.view_args.get('id')) if request and request.view_args and request.view_args.get('id') else url_for('trainer', rankingId=1) }}">Trainer</a>
+                {% else %}
+                    <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                {% endif %}
+                <a class="nav-link" href="{{ url_for('logOut') }}">Log Out</a>
             </div>
         </div>
     </nav>

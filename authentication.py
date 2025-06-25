@@ -63,4 +63,3 @@ def authenticate(password, request):
             return True
     log(2, "authenticate", f'DENIED: Can not authenticate user with Ip: {request.remote_addr}, because "{password}" does not match any registered passwordHash')
     return False
-

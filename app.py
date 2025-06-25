@@ -45,6 +45,11 @@ def login():
         else:
             return redirect('/login')
 
+@app.route('/logout')
+def logOut():
+    session.clear()
+    return redirect('/login')
+
 @app.route('/')
 @requiresViewer
 def home():
@@ -60,12 +65,13 @@ def home():
     """
     try:
         rankings = Rankings.query.all()
+        allPlayers = Players.query.order_by(Players.wins.desc()).all()
         log(1, "home", f"Successfully loaded {len(rankings)} rankings for home page")
-        return render_template('index.html', rankings=rankings)
+        return render_template('index.html', rankings=rankings, allPlayers=allPlayers)
     except Exception as e:
         log(4, "home", f"Error loading rankings for home page: {e}")
         # Return empty rankings list as fallback
-        return render_template('index.html', rankings=[])
+        return render_template('index.html', rankings=[], allPlayers=[])
 
 @app.route('/view/<int:rankingId>')
 @requiresViewer
