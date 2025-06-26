@@ -65,8 +65,8 @@ def home():
     """
     try:
         rankings = Rankings.query.all()
+        print(len(rankings))
         allPlayers = Players.query.order_by(Players.wins.desc()).all()
-        log(1, "home", f"Successfully loaded {len(rankings)} rankings for home page")
         return render_template('index.html', rankings=rankings, allPlayers=allPlayers)
     except Exception as e:
         log(4, "home", f"Error loading rankings for home page: {e}")
@@ -148,6 +148,28 @@ def trainer(rankingId):
                              activeMatches=[], 
                              rankingId=rankingId, 
                              allPlayers=[])
+
+@app.route('/trainer/settings', methods=['GET', 'POST'])
+@requiresTrainer
+def settingsTrainer():
+    rankingId = None
+    if request.method == 'POST':
+        rankingId = request.form.get('rankingId')
+        session['selectedRankingId'] = rankingId
+        return redirect('/trainer/settings')
+    else:
+        if session.get('selectedRankingId'):
+            rankingId = session['selectedRankingId']
+
+    try:
+        rankings = Rankings.query.all()
+        allPlayers = Players.query.order_by(Players.wins.desc()).all()
+        # Fix: Use assignment (=) instead of comparison (==)
+        session['selectedRankingId'] = ""
+        return render_template('settingsTrainer.html', rankings=rankings, allPlayers=allPlayers, rankingId=rankingId)
+    except Exception as e:
+        log(4, "settingsTrainer", f"Error loading rankings for home page: {e}")
+        return render_template('settingsTrainer.html', rankings=[], allPlayers=[])
 
 @app.route('/trainer/start_match', methods=['POST'])
 @requiresTrainer

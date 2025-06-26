@@ -17,30 +17,39 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <div>
+            <div class="d-flex align-items-center">
+                {% if request.path != '/' and request.path != '/login' %}
+                    <button class="btn btn-secondary btn-sm me-2" onclick="history.back()" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
+                        <span class="material-symbols-outlined">arrow_back</span>
+                    </button>
+                {% else %}
+                    <div class="btn btn-secondary btn-sm me-2 invisible" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">
+                        <span class="material-symbols-outlined">arrow_back</span>
+                    </div>
+                {% endif %} 
                 <a class="navbar-brand" href="{{ url_for('home') }}">TT Rankings</a>
                 {% if session['permissionLevel'] == "trainer" %}
                     <span class="badge text-bg-info fs-4">Trainer</span>
                 {% endif %}
-                </div>
+            </div>
+            {% if session['authenticated'] == True %}
             <div class="navbar-nav d-flex flex-row">
+                <a class="nav-link px-2 mx-1 bg-light-subtle text-light-emphasis rounded" href="{{ url_for('home') }}">
+                    <span class="material-symbols-outlined">bar_chart</span>
+                </a>
                 {% if session['permissionLevel'] == "trainer" %}
-                    <a class="nav-link px-2 mx-1 bg-light-subtle text-light-emphasis rounded" href="{{ url_for('home') }}">
-                        <span class="material-symbols-outlined">bar_chart</span>
-                    </a>
                     <a class="nav-link px-2 mx-1 bg-light-subtle text-light-emphasis rounded" href="{{ url_for('settingsTrainer') }}">
                         <span class="material-symbols-outlined">add</span>
                     </a>
                     <a class="nav-link px-2 mx-1 bg-light-subtle text-light-emphasis rounded" href="{{ url_for('settingsTrainer') }}">
                         <span class="material-symbols-outlined">settings</span>
                     </a>
-                {% else %}
-                    <a class="nav-link px-2 mx-1 bg-light-subtle text-light-emphasis rounded" href="{{ url_for('home') }}">Home</a>
                 {% endif %}
                 <a class="nav-link px-2 mx-1 bg-light-subtle text-light-emphasis rounded" href="{{ url_for('logOut') }}">
                     <span class="material-symbols-outlined">logout</span>
                 </a>
             </div>
+            {% endif %}
         </div>
     </nav>
 

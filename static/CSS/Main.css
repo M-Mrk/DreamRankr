@@ -162,3 +162,7 @@
         margin-bottom: 1rem;
     }
 }
+
+.vertical-align-bottom { 
+    vertical-align: bottom; 
+}
