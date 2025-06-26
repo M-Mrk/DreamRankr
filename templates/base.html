@@ -23,14 +23,23 @@
                     <span class="badge text-bg-info fs-4">Trainer</span>
                 {% endif %}
                 </div>
-            <div class="navbar-nav">
+            <div class="navbar-nav d-flex flex-row">
                 {% if session['permissionLevel'] == "trainer" %}
-                    <a class="nav-link" href="{{ url_for('home') }}">Rankings</a>
-                    <a class="nav-link" href="{{ url_for('trainer', rankingId=request.view_args.get('id')) if request and request.view_args and request.view_args.get('id') else url_for('trainer', rankingId=1) }}">Trainer</a>
+                    <a class="nav-link px-2 mx-1 bg-light-subtle text-light-emphasis rounded" href="{{ url_for('home') }}">
+                        <span class="material-symbols-outlined">bar_chart</span>
+                    </a>
+                    <a class="nav-link px-2 mx-1 bg-light-subtle text-light-emphasis rounded" href="{{ url_for('settingsTrainer') }}">
+                        <span class="material-symbols-outlined">add</span>
+                    </a>
+                    <a class="nav-link px-2 mx-1 bg-light-subtle text-light-emphasis rounded" href="{{ url_for('settingsTrainer') }}">
+                        <span class="material-symbols-outlined">settings</span>
+                    </a>
                 {% else %}
-                    <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                    <a class="nav-link px-2 mx-1 bg-light-subtle text-light-emphasis rounded" href="{{ url_for('home') }}">Home</a>
                 {% endif %}
-                <a class="nav-link" href="{{ url_for('logOut') }}">Log Out</a>
+                <a class="nav-link px-2 mx-1 bg-light-subtle text-light-emphasis rounded" href="{{ url_for('logOut') }}">
+                    <span class="material-symbols-outlined">logout</span>
+                </a>
             </div>
         </div>
     </nav>

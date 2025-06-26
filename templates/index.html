@@ -38,44 +38,48 @@
     
     <!-- Horizontal Separator with All Players Section -->
     <div class="mt-4">
-        <div class="border-top border-secondary pt-4 mb-4">
-            <div class="text-center">
-                <h4 class="mb-1">All Players</h4>
-                <h6 class="text-muted mb-0">lifetime stats</h6>
-            </div>
-        </div>
-        
-        {% if allPlayers and allPlayers|length > 0 %}
-            <!-- Sorting Buttons - Mobile Optimized -->
-            <div class="mb-4">
-                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                    <div class="btn-group-vertical d-md-none w-100" role="group" aria-label="Sort options">
-                        <button type="button" class="btn btn-outline-primary active" id="sortWinsMobile" onclick="sortPlayers('wins')">
-                            <span class="material-symbols-outlined">trophy</span>
-                            <span> Sort by Wins</span>
-                        </button>
-                        <button type="button" class="btn btn-outline-primary" id="sortWinRateMobile" onclick="sortPlayers('winRate')">
-                            <span class="material-symbols-outlined">bar_chart</span> Sort by Win %
-                        </button>
-                        <button type="button" class="btn btn-outline-primary" id="sortSetsMobile" onclick="sortPlayers('sets')">
-                            <span class="material-symbols-outlined">scoreboard</span>
-                             Sort by Sets Won
-                        </button>
-                    </div>
-                    <div class="btn-group d-none d-md-flex" role="group" aria-label="Sort options">
-                        <button type="button" class="btn btn-outline-primary active" id="sortWins" onclick="sortPlayers('wins')">
+        <div class="text-center pt-5">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h4 class="mb-1">All Players</h4>
+                    <h6 class="text-muted mb-0">lifetime stats</h6>
+                </div>
+                <div class="flex-grow-1 mx-4">
+                    <hr class="border-secondary">
+                </div>
+                <div class="d-none d-md-block">
+                    <div class="btn-group" role="group" aria-label="Sort options">
+                        <button type="button" class="btn btn-outline-primary active btn-sm" id="sortWins" onclick="sortPlayers('wins')">
                             Sort by Wins
                         </button>
-                        <button type="button" class="btn btn-outline-primary" id="sortWinRate" onclick="sortPlayers('winRate')">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="sortWinRate" onclick="sortPlayers('winRate')">
                             Sort by Win %
                         </button>
-                        <button type="button" class="btn btn-outline-primary" id="sortSets" onclick="sortPlayers('sets')">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="sortSets" onclick="sortPlayers('sets')">
                             Sort by Sets Won
                         </button>
                     </div>
                 </div>
             </div>
-
+            <!-- Mobile sorting buttons -->
+            <div class="d-md-none mb-4">
+                <div class="btn-group-vertical w-100" role="group" aria-label="Sort options">
+                    <button type="button" class="btn btn-outline-primary active" id="sortWinsMobile" onclick="sortPlayers('wins')">
+                        <span class="material-symbols-outlined">trophy</span>
+                        <span> Sort by Wins</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" id="sortWinRateMobile" onclick="sortPlayers('winRate')">
+                        <span class="material-symbols-outlined">bar_chart</span> Sort by Win %
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" id="sortSetsMobile" onclick="sortPlayers('sets')">
+                        <span class="material-symbols-outlined">scoreboard</span>
+                            Sort by Sets Won
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        {% if allPlayers and allPlayers|length > 0 %}
             <!-- Mobile Podium for Top 3 Players -->
             {% if allPlayers|length >= 3 %}
             <div class="podium-container mb-4" id="podiumContainer">
