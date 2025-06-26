@@ -1,0 +1,272 @@
+{% extends "base.html" %} {% block content %}
+<div class="container-fluid px-3 mt-1">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0 d-flex align-items-center">
+            <span class="material-symbols-outlined me-2">add_circle</span>
+            Create New Ranking
+          </h4>
+        </div>
+        <div class="card-body">
+          <form method="post" action="/trainer/start" id="createRankingForm">
+            <!-- Basic Information Section -->
+            <div class="mb-4">
+              <h5 class="text-primary mb-3">
+                <span class="material-symbols-outlined me-2">info</span>
+                Basic Information
+              </h5>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="listName" class="form-label"
+                    >Ranking Name *</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="listName"
+                    name="listName"
+                    placeholder="Enter ranking name"
+                    required
+                  />
+                </div>
+
+                <div class="col-md-6">
+                  <label for="description" class="form-label"
+                    >Description</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="description"
+                    name="description"
+                    placeholder="Optional description"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Player Selection Section -->
+            <div class="mb-3">
+              <div
+                class="d-flex justify-content-between align-items-center mb-3"
+              >
+                <h5 class="text-primary mb-0">
+                  <span class="material-symbols-outlined me-2">group</span>
+                  Select Players
+                </h5>
+                <small class="text-muted"
+                  >Optional - you can add players later</small
+                >
+              </div>
+
+              <!-- Search Bar -->
+              <div class="mb-3">
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <span class="material-symbols-outlined">search</span>
+                  </span>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="playerSearch"
+                    placeholder="Search players by name..."
+                  />
+                </div>
+              </div>
+
+              <!-- Select All/None Controls -->
+              <div class="mb-3">
+                <div class="btn-group btn-group-sm" role="group">
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary"
+                    id="selectAllBtn"
+                  >
+                    <span class="material-symbols-outlined me-1"
+                      >select_all</span
+                    >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    id="selectNoneBtn"
+                  >
+                    <span class="material-symbols-outlined me-1">deselect</span>
+                    Select None
+                  </button>
+                </div>
+                <div class="float-end">
+                  <small class="text-muted">
+                    <span id="selectedCount">0</span> players selected
+                  </small>
+                </div>
+                <div class="clearfix"></div>
+              </div>
+
+              <!-- Players List -->
+              <div
+                class="border rounded p-3 bg-light"
+                style="max-height: 400px; overflow-y: auto"
+              >
+                {% if allPlayers and allPlayers|length > 0 %}
+                <div class="row g-2" id="playersContainer">
+                  {% for player in allPlayers %}
+                  <div
+                    class="col-6 col-md-4 col-lg-3 col-xl-2 player-item"
+                    data-player-name="{{ player.name.lower() }}"
+                  >
+                    <div class="form-check">
+                      <input
+                        class="form-check-input player-checkbox"
+                        type="checkbox"
+                        value="{{ player.id }}"
+                        id="player{{ player.id }}"
+                        name="startingPlayers"
+                      />
+                      <label
+                        class="form-check-label w-100"
+                        for="player{{ player.id }}"
+                      >
+                        <div
+                          class="d-flex justify-content-between align-items-center"
+                        >
+                          <span class="fw-bold">{{ player.name }}</span>
+                          <small class="text-muted">
+                            {{ player.wins }}W - {{ player.losses }}L
+                          </small>
+                        </div>
+                        <small class="text-muted">
+                          {% if player.wins and (player.wins + player.losses) >
+                          0 %} {{ "%.1f"|format((player.wins / (player.wins +
+                          player.losses) * 100)) }}% win rate {% else %} No
+                          matches played {% endif %}
+                        </small>
+                      </label>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                  <span
+                    class="material-symbols-outlined d-block mb-2"
+                    style="font-size: 3rem"
+                    >group_off</span
+                  >
+                  <p class="mb-0">No players available yet</p>
+                  <small
+                    >You can create players after creating this ranking</small
+                  >
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex gap-2 justify-content-end">
+              <a
+                href="{{ url_for('home') }}"
+                class="btn btn-secondary d-flex align-items-center"
+              >
+                <span class="material-symbols-outlined me-1">arrow_back</span>
+                Cancel
+              </a>
+              <button
+                type="submit"
+                class="btn btn-success d-flex align-items-center"
+              >
+                <span class="material-symbols-outlined me-1">add</span>
+                Create Ranking
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const playerSearch = document.getElementById("playerSearch");
+    const selectAllBtn = document.getElementById("selectAllBtn");
+    const selectNoneBtn = document.getElementById("selectNoneBtn");
+    const selectedCount = document.getElementById("selectedCount");
+    const playerCheckboxes = document.querySelectorAll(".player-checkbox");
+    const playerItems = document.querySelectorAll(".player-item");
+
+    // Search functionality
+    if (playerSearch) {
+      playerSearch.addEventListener("input", function () {
+        const searchTerm = this.value.toLowerCase().trim();
+
+        playerItems.forEach((item) => {
+          const playerName = item.getAttribute("data-player-name");
+          if (playerName.includes(searchTerm)) {
+            item.style.display = "block";
+          } else {
+            item.style.display = "none";
+          }
+        });
+      });
+    }
+
+    // Select All functionality
+    if (selectAllBtn) {
+      selectAllBtn.addEventListener("click", function () {
+        playerCheckboxes.forEach((checkbox) => {
+          const item = checkbox.closest(".player-item");
+          if (item.style.display !== "none") {
+            checkbox.checked = true;
+          }
+        });
+        updateSelectedCount();
+      });
+    }
+
+    // Select None functionality
+    if (selectNoneBtn) {
+      selectNoneBtn.addEventListener("click", function () {
+        playerCheckboxes.forEach((checkbox) => {
+          checkbox.checked = false;
+        });
+        updateSelectedCount();
+      });
+    }
+
+    // Update selected count when checkboxes change
+    playerCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", updateSelectedCount);
+    });
+
+    function updateSelectedCount() {
+      const checkedCount = document.querySelectorAll(
+        ".player-checkbox:checked"
+      ).length;
+      selectedCount.textContent = checkedCount;
+    }
+
+    // Form validation
+    const form = document.getElementById("createRankingForm");
+    if (form) {
+      form.addEventListener("submit", function (e) {
+        const listName = document.getElementById("listName").value.trim();
+
+        if (!listName) {
+          e.preventDefault();
+          alert("Please enter a ranking name.");
+          document.getElementById("listName").focus();
+          return false;
+        }
+      });
+    }
+
+    // Initial count update
+    updateSelectedCount();
+  });
+</script>
+{% endblock %}

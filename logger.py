@@ -52,7 +52,7 @@ def log(level, origin, message):
     Handles database errors gracefully by falling back to console output.
     
     Args:
-        level: Log level (0-4 or string: debug, info, auth, warning, error)
+        level: Log level (0-4 or string: 0:debug, 1:info, 2:auth, 3:warning, 4:error)
         origin: Source of the log message (function/module name)
         message: Log message content describing the event
         

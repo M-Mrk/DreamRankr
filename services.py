@@ -1,4 +1,4 @@
-from db import db, PlayerRankings, Players, OnGoingMatches, PlayerBonuses, FinishedMatches
+from db import db, PlayerRankings, Players, OnGoingMatches, PlayerBonuses, FinishedMatches, Rankings
 from playerStats import changeStats
 from bonuses import getBonus
 from logger import log
@@ -362,3 +362,36 @@ def updatePlayerAttributes(player, attribute_mappings, request):
     for db_attr, form_field in attribute_mappings:
         current_value = getattr(player, db_attr)
         checkIfChangedAndUpdate(form_field, player, current_value, db_attr, request)
+
+def startList(name, description, startingPlayers):
+    log(1, "startList", f"Starting to create new list: {name}")
+    if Rankings.query.filter_by(name=name).first():
+        log(3, "startList", f"List name: '{name}' is already used")
+        return
+    try:
+        new_Ranking = Rankings(
+            name=name,
+            description=description
+        )
+        db.session.add(new_Ranking)
+        db.session.flush()
+        if startingPlayers:
+            for player in startingPlayers:
+                addPlayerToRanking(player, new_Ranking.id)
+        db.session.commit()
+        log(1, "startList", f"Successfully created new List: {name}")
+    except Exception as e:
+        db.session.rollback()
+        log(4, "startList", f"Could not create List, because of {e}")
+
+def deleteList(rankingId):
+    log(1, "deleteList", f"Starting to delete ranking {rankingId}")
+    if db.session.get(Rankings, rankingId):
+        try:
+            ranking = db.session.get(Rankings, rankingId)
+            db.session.delete(ranking)
+            db.session.commit()
+            log(1, "deleteList", f"Successfully deleted ranking {rankingId}")
+        except Exception as e:
+            log(4, "deleteList", f"Could not delete ranking {rankingId}, because of {e}")
+            return

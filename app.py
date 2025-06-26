@@ -7,7 +7,7 @@ from db import db, Players, PlayerBonuses, Rankings, PlayerRankings, Authenticat
 
 #TT Ranking files
 from bonuses import updateOrCreatePlayerBonus, validateBonusParameters
-from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes
+from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes, startList
 from authentication import requiresViewer, requiresTrainer, authenticate
 from logger import log
 
@@ -26,9 +26,6 @@ app.permanent_session_lifetime = timedelta(minutes=30)  # 30 minute timeout
 # Initialize database and migration support
 db.init_app(app)
 migrate = Migrate(app, db)
-
-# Import stat functions from playerStats module
-from playerStats import changeStats
 
 # Add datetime utility to Jinja template globals for use in templates
 app.jinja_env.globals['now'] = datetime.utcnow
@@ -148,6 +145,21 @@ def trainer(rankingId):
                              activeMatches=[], 
                              rankingId=rankingId, 
                              allPlayers=[])
+
+@app.route('/trainer/start', methods=['GET', 'POST'])
+@requiresTrainer
+def startListTrainer():
+    if request.method == 'GET':
+        allPlayers = Players.query.all()
+        return render_template('startList.html', allPlayers=allPlayers)
+    elif request.method == 'POST':
+        listName = request.form.get('listName')
+        description = request.form.get('description')
+        startingPlayers = request.form.getlist('startingPlayers')
+        # type = request.form.get('type')
+
+        startList(listName, description, startingPlayers)
+        return redirect('/')
 
 @app.route('/trainer/settings', methods=['GET', 'POST'])
 @requiresTrainer
