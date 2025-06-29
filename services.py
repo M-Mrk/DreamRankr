@@ -363,19 +363,26 @@ def updatePlayerAttributes(player, attribute_mappings, request):
         current_value = getattr(player, db_attr)
         checkIfChangedAndUpdate(form_field, player, current_value, db_attr, request)
 
-def startList(name, description, startingPlayers):
+def startList(name, description, startingPlayers, isTournament, typeOfTournament):
     log(1, "startList", f"Starting to create new list: {name}")
     if Rankings.query.filter_by(name=name).first():
         log(3, "startList", f"List name: '{name}' is already used")
         return
     try:
+        if not isTournament:
+            isTournament = False
+            typeOfTournament = ""
+
         new_Ranking = Rankings(
             name=name,
-            description=description
+            description=description,
+            tournament=isTournament,
+            typeTournament=typeOfTournament,
+            ended = False
         )
         db.session.add(new_Ranking)
-        db.session.flush()
         if startingPlayers:
+            db.session.flush()
             for player in startingPlayers:
                 addPlayerToRanking(player, new_Ranking.id)
         db.session.commit()
@@ -384,14 +391,29 @@ def startList(name, description, startingPlayers):
         db.session.rollback()
         log(4, "startList", f"Could not create List, because of {e}")
 
+def endList(rankingId):
+    log(1, "endList", f"Starting to end ranking {rankingId}")
+    if db.session.get(Rankings, rankingId):
+        try:
+            ranking = db.session.get(Rankings, rankingId)
+            ranking.ended = True
+            db.session.commit()
+            log(1, "endList", f"Successfully ended ranking {rankingId}")
+        except Exception as e:
+            db.session.rollback()
+            log(4, "endList", f"Could not end ranking {rankingId}, because of {e}")
+
 def deleteList(rankingId):
     log(1, "deleteList", f"Starting to delete ranking {rankingId}")
     if db.session.get(Rankings, rankingId):
         try:
             ranking = db.session.get(Rankings, rankingId)
             db.session.delete(ranking)
+            relatedRankingEntries = PlayerRankings.query.filter_by(rankingId=rankingId)
+            for entry in relatedRankingEntries:
+                db.session.delete(entry)
             db.session.commit()
             log(1, "deleteList", f"Successfully deleted ranking {rankingId}")
         except Exception as e:
+            db.session.rollback()
             log(4, "deleteList", f"Could not delete ranking {rankingId}, because of {e}")
-            return

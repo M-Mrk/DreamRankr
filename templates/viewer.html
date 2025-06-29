@@ -1,58 +1,273 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block content %} {% if ranking.ended == True %}
+<!-- Ranking Ended - Show Podium -->
+<div class="alert alert-success text-center mb-4">
+<h4 class="mb-2"><i class="material-icons">emoji_events</i> Ranking Completed! <i class="material-icons">emoji_events</i></h4>
+  <p class="mb-0">Congratulations to all participants!</p>
+</div>
 
-{% block content %}
-<h1>Current Rankings</h1>
+{% if players and players|length >= 3 %}
+<div class="podium-container mb-4 podium-animated">
+  <!-- Mobile Podium (Vertical Stack) -->
+  <div class="d-md-none">
+    <div class="row g-2">
+      <!-- First Place -->
+      <div class="col-12 podium-slide-1">
+        <div class="card border-warning bg-warning bg-opacity-10">
+          <div class="card-body text-center py-3">
+            <h5 class="mb-2">🥇 1st Place</h5>
+            <h4 class="text-warning mb-2">{{ players[0].name }}</h4>
+            <div class="row text-center">
+              <div class="col-4">
+                <small class="text-muted d-block">Points</small>
+                <strong>{{ players[0].points }}</strong>
+              </div>
+              <div class="col-4">
+                <small class="text-muted d-block">Wins</small>
+                <strong>{{ players[0].wins }}</strong>
+              </div>
+              <div class="col-4">
+                <small class="text-muted d-block">Win %</small>
+                <strong>
+                  {% if players[0].wins and (players[0].wins +
+                  players[0].losses) > 0 %} {{ "%.1f"|format((players[0].wins /
+                  (players[0].wins + players[0].losses) * 100)) }}% {% else %}
+                  N/A {% endif %}
+                </strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Second and Third Place -->
+      <div class="col-8 podium-slide-2">
+        <div class="card border-primary bg-primary bg-opacity-10">
+          <div class="card-body text-center py-3">
+            <h5 class="mb-2">🥈 2nd Place</h5>
+            <h5 class="text-primary mb-2">{{ players[1].name }}</h5>
+            <div class="row text-center">
+              <div class="col-6">
+                <small class="text-muted d-block">Points</small>
+                <strong>{{ players[1].points }}</strong>
+              </div>
+              <div class="col-6">
+                <small class="text-muted d-block">Wins</small>
+                <strong>{{ players[1].wins }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-4 podium-slide-3">
+        <div class="card border-danger bg-danger bg-opacity-10">
+          <div class="card-body text-center py-2">
+            <h6 class="mb-1">🥉 3rd</h6>
+            <p class="mb-1 fw-bold small">{{ players[2].name }}</p>
+            <small class="text-muted d-block" style="font-size: 0.75rem"
+              >{{ players[2].points }} pts</small
+            >
+            <small class="text-muted d-block" style="font-size: 0.75rem"
+              >{{ players[2].wins }} wins</small
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Desktop Podium -->
+  <div class="d-none d-md-block">
+    <div class="row justify-content-center align-items-end">
+      <!-- Second Place -->
+      <div class="col-md-3 text-center podium-slide-2">
+        <div class="podium-position podium-second d-flex flex-column">
+          <div class="podium-player">
+            <h5 class="mb-1">🥈 2nd Place</h5>
+            <h4 class="text-primary">{{ players[1].name }}</h4>
+            <p class="mb-1"><strong>{{ players[1].points }}</strong> points</p>
+            <p class="mb-1"><strong>{{ players[1].wins }}</strong> wins</p>
+            <p class="mb-0">
+              {% if players[1].wins and (players[1].wins + players[1].losses) >
+              0 %} {{ "%.1f"|format((players[1].wins / (players[1].wins +
+              players[1].losses) * 100)) }}% win rate {% else %} N/A win rate {%
+              endif %}
+            </p>
+          </div>
+          <div class="podium-base podium-base-second mt-auto">2</div>
+        </div>
+      </div>
+
+      <!-- First Place -->
+      <div class="col-md-3 text-center podium-slide-1">
+        <div class="podium-position podium-first d-flex flex-column">
+          <div class="podium-player">
+            <h5 class="mb-1">🥇 1st Place</h5>
+            <h4 class="text-warning">{{ players[0].name }}</h4>
+            <p class="mb-1"><strong>{{ players[0].points }}</strong> points</p>
+            <p class="mb-1"><strong>{{ players[0].wins }}</strong> wins</p>
+            <p class="mb-0">
+              {% if players[0].wins and (players[0].wins + players[0].losses) >
+              0 %} {{ "%.1f"|format((players[0].wins / (players[0].wins +
+              players[0].losses) * 100)) }}% win rate {% else %} N/A win rate {%
+              endif %}
+            </p>
+          </div>
+          <div class="podium-base podium-base-first mt-auto">1</div>
+        </div>
+      </div>
+
+      <!-- Third Place -->
+      <div class="col-md-3 text-center podium-slide-3">
+        <div class="podium-position podium-third d-flex flex-column">
+          <div class="podium-player">
+            <h5 class="mb-1">🥉 3rd Place</h5>
+            <h4 class="text-danger">{{ players[2].name }}</h4>
+            <p class="mb-1"><strong>{{ players[2].points }}</strong> points</p>
+            <p class="mb-1"><strong>{{ players[2].wins }}</strong> wins</p>
+            <p class="mb-0">
+              {% if players[2].wins and (players[2].wins + players[2].losses) >
+              0 %} {{ "%.1f"|format((players[2].wins / (players[2].wins +
+              players[2].losses) * 100)) }}% win rate {% else %} N/A win rate {%
+              endif %}
+            </p>
+          </div>
+          <div class="podium-base podium-base-third mt-auto">3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %} {% endif %}
 
 <div class="table-responsive">
-    <table class="table table-striped table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>Ranking</th>
-                <th></th>
-                <th>Spieler</th>
-                <th>Points</th>
-                <th>Siege</th>
-                <th>Verluste</th>
-                <th>Gewinn %</th>
-                <th>Sätze gewonnen</th>
-                <th>Sätze verloren</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for player in players %}
-            <tr>
-                <td><strong>{{ player.ranking }}</strong></td>
-                <td>
-                    {% if player.lastRanking and player.lastRankingChanged %}
-                        {% set hours_since_change = (now() - player.lastRankingChanged).total_seconds() / 3600 %}
-                        {% if hours_since_change <= 12 %}
-                            {% if player.lastRanking < player.ranking %}
-                                <span class="badge bg-danger">
-                                    <i class="fs-5">↓</i>
-                                </span>
-                            {% elif player.lastRanking > player.ranking %}
-                                <span class="badge bg-success">
-                                    <i class="fs-5">↑</i>
-                                </span>
-                            {% endif %}
-                        {% endif %}
-                    {% endif %}
-                </td>
-                <td>{{ player.name }}</td>
-                <td>{{ player.points }}</td>
-                <td>{{ player.wins }}</td>
-                <td>{{ player.losses }}</td>
-                <td>{% if player.wins %}
-                        {{ "%.1f"|format((player.wins / (player.wins + player.losses) * 100)) }}%
-                    {% else %}
-                        N/V
-                    {% endif %}
-                </td>
-                <td>{{ player.setsWon }}</td>
-                <td>{{ player.setsLost }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+  <table class="table table-striped table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>Ranking</th>
+        <th></th>
+        <th>Spieler</th>
+        <th>Points</th>
+        <th>Siege</th>
+        <th>Verluste</th>
+        <th>Gewinn %</th>
+        <th>Sätze gewonnen</th>
+        <th>Sätze verloren</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for player in players %}
+      <tr>
+        <td><strong>{{ player.ranking }}</strong></td>
+        <td>
+          {% if player.lastRanking and player.lastRankingChanged %} {% set
+          hours_since_change = (now() -
+          player.lastRankingChanged).total_seconds() / 3600 %} {% if
+          hours_since_change <= 12 %} {% if player.lastRanking < player.ranking
+          %}
+          <span class="badge bg-danger">
+            <i class="fs-5">↓</i>
+          </span>
+          {% elif player.lastRanking > player.ranking %}
+          <span class="badge bg-success">
+            <i class="fs-5">↑</i>
+          </span>
+          {% endif %} {% endif %} {% endif %}
+        </td>
+        <td>{{ player.name }}</td>
+        <td>{{ player.points }}</td>
+        <td>{{ player.wins }}</td>
+        <td>{{ player.losses }}</td>
+        <td>
+          {% if player.wins %} {{ "%.1f"|format((player.wins / (player.wins +
+          player.losses) * 100)) }}% {% else %} N/V {% endif %}
+        </td>
+        <td>{{ player.setsWon }}</td>
+        <td>{{ player.setsLost }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
+
+<style>
+  /* Podium Animation Styles */
+  .podium-animated .podium-slide-1,
+  .podium-animated .podium-slide-2,
+  .podium-animated .podium-slide-3 {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+
+  .podium-animated.animate .podium-slide-1 {
+    animation: flyInUp 0.8s ease-out 0.2s forwards;
+  }
+
+  .podium-animated.animate .podium-slide-2 {
+    animation: flyInUp 0.8s ease-out 0.5s forwards;
+  }
+
+  .podium-animated.animate .podium-slide-3 {
+    animation: flyInUp 0.8s ease-out 0.8s forwards;
+  }
+
+  @keyframes flyInUp {
+    from {
+      opacity: 0;
+      transform: translateY(50px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Add a subtle bounce effect */
+  .podium-animated.animate .podium-slide-1 {
+    animation: flyInUpBounce 1s ease-out 0.2s forwards;
+  }
+
+  @keyframes flyInUpBounce {
+    0% {
+      opacity: 0;
+      transform: translateY(50px) scale(0.9);
+    }
+    60% {
+      opacity: 1;
+      transform: translateY(-10px) scale(1.05);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Celebration effect for winner */
+  .podium-animated.animate .podium-slide-1 .podium-player {
+    animation: celebrate 2s ease-in-out 1.2s infinite alternate;
+  }
+
+  @keyframes celebrate {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
+  }
+</style>
+
+<script>
+  // Trigger animation when page loads
+  document.addEventListener("DOMContentLoaded", function () {
+    const podium = document.querySelector(".podium-animated");
+    if (podium) {
+      // Small delay to ensure smooth animation
+      setTimeout(() => {
+        podium.classList.add("animate");
+      }, 100);
+    }
+  });
+</script>
 {% endblock %}

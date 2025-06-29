@@ -1,127 +1,380 @@
-{% extends "base.html" %}
-
-{% block content %}
-<div class="container-fluid h-100">
-    <div class="row g-3 justify-content-center">
-        <div class="col-12">
-            <h1 class="text-center mb-4">Trainer Settings</h1>
-            {% if not rankingId %}
-                <h4 class="text-center text-muted mb-4">Select a ranking to configure</h4>
-            {% endif %}
-        </div>
-        
-        {% if not rankingId %}
-            {% for ranking in rankings %}
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body d-flex flex-column text-center">
-                        <h5 class="card-title mb-3">{{ ranking.name }}</h5>
-                        <p class="card-text flex-grow-1 text-muted">
-                            {% if ranking.description %}
-                                {{ ranking.description }}
-                            {% else %}
-                                Configure settings for this ranking
-                            {% endif %}
-                        </p>
-                        <form method="POST" class="w-100">
-                            <input type="hidden" name="rankingId" value="{{ ranking.id }}">
-                            <button type="submit" class="btn btn-primary btn-lg d-flex align-items-center justify-content-center w-100">
-                                <i class="material-symbols-outlined me-2">settings</i>
-                                <span>Configure Settings</span>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0">
-                            <i class="material-symbols-outlined me-2">settings</i>
-                            Ranking Settings
-                        </h4>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST">
-                            <input type="hidden" name="rankingId" value="{{ rankingId }}">
-                            
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label for="matchDuration" class="form-label">Match Duration (minutes)</label>
-                                    <input type="number" class="form-control" id="matchDuration" name="matchDuration" value="30" min="5" max="120">
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <label for="maxPlayers" class="form-label">Maximum Players</label>
-                                    <input type="number" class="form-control" id="maxPlayers" name="maxPlayers" value="16" min="2" max="64">
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <label for="pointsPerWin" class="form-label">Points per Win</label>
-                                    <input type="number" class="form-control" id="pointsPerWin" name="pointsPerWin" value="3" min="1" max="10">
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <label for="pointsPerLoss" class="form-label">Points per Loss</label>
-                                    <input type="number" class="form-control" id="pointsPerLoss" name="pointsPerLoss" value="0" min="0" max="5">
-                                </div>
-                                
-                                <div class="col-12">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="allowDraws" name="allowDraws">
-                                        <label class="form-check-label" for="allowDraws">
-                                            Allow draws/ties
-                                        </label>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-12">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="autoSchedule" name="autoSchedule" checked>
-                                        <label class="form-check-label" for="autoSchedule">
-                                            Automatic match scheduling
-                                        </label>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-12">
-                                    <label for="rankingSystem" class="form-label">Ranking System</label>
-                                    <select class="form-select" id="rankingSystem" name="rankingSystem">
-                                        <option value="elo">ELO Rating</option>
-                                        <option value="points" selected>Points Based</option>
-                                        <option value="wins">Win/Loss Ratio</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="col-12">
-                                    <div class="d-flex gap-2 justify-content-end">
-                                        <a href="{{ url_for('settingsTrainer') }}" class="btn btn-secondary d-flex align-items-center justify-content-center">
-                                            <i class="material-symbols-outlined me-1">arrow_back</i>
-                                            Back
-                                        </a>
-                                        <button type="submit" class="btn btn-success d-flex align-items-center justify-content-center">
-                                            <i class="material-symbols-outlined me-1">save</i>
-                                            Save Settings
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-
-        {% if rankings|length == 0 %}
-        <div class="col-12">
-            <div class="alert alert-info text-center">
-                <h5 class="mb-2">No rankings available</h5>
-                <p class="mb-0">Create a ranking first to configure settings.</p>
-            </div>
-        </div>
-        {% endif %}
+{% extends "base.html" %} {% block content %}
+<!-- End Ranking Modal -->
+<div
+  class="modal fade"
+  id="endRankingModal"
+  tabindex="-1"
+  aria-labelledby="endRankingModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="endRankingModalLabel">End Ranking</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to end this ranking? The ranking will be finalized
+        and show results only.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <form
+          method="POST"
+          action="{{ url_for('endListTrainer') }}"
+          class="d-inline"
+        >
+          <input type="hidden" name="rankingId" value="{{ rankingId }}" />
+          <input type="hidden" name="endOrDelete" value="end" />
+          <button type="submit" class="btn btn-warning">End Ranking</button>
+        </form>
+      </div>
     </div>
+  </div>
 </div>
+
+<!-- Delete Ranking Modal -->
+<div
+  class="modal fade"
+  id="deleteRankingModal"
+  tabindex="-1"
+  aria-labelledby="deleteRankingModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteRankingModalLabel">Delete Ranking</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to permanently delete this ranking? This action
+        cannot be undone and will remove all data!
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <form
+          method="POST"
+          action="{{ url_for('endListTrainer') }}"
+          class="d-inline"
+        >
+          <input type="hidden" name="rankingId" value="{{ rankingId }}" />
+          <input type="hidden" name="endOrDelete" value="delete" />
+          <button type="submit" class="btn btn-danger">Delete Ranking</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid h-100">
+  <div class="row g-3 justify-content-center">
+    <div class="col-12">
+      <h1 class="text-center mb-4">Trainer Settings</h1>
+      {% if not rankingId %}
+      <h4 class="text-center text-muted mb-4">Select a ranking to configure</h4>
+      {% endif %}
+    </div>
+
+    {% if not rankingId %} {% for ranking in rankings %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body d-flex flex-column text-center">
+          <h5 class="card-title mb-3">{{ ranking.name }}</h5>
+          <p class="card-text flex-grow-1 text-muted">
+            {% if ranking.description %} {{ ranking.description }} {% else %}
+            Configure settings for this ranking {% endif %}
+          </p>
+          <form method="POST" class="w-100">
+            <input type="hidden" name="rankingId" value="{{ ranking.id }}" />
+            <button
+              type="submit"
+              class="btn btn-primary btn-lg d-flex align-items-center justify-content-center w-100"
+            >
+              <i class="material-symbols-outlined me-2">settings</i>
+              <span>Configure Settings</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %} {% else %}
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">
+            <i class="material-symbols-outlined me-2">settings</i>
+            Ranking Settings
+          </h4>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            <input type="hidden" name="rankingId" value="{{ rankingId }}" />
+
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="allowDraws"
+                    name="allowDraws"
+                  />
+                  <label class="form-check-label" for="allowDraws">
+                    Allow draws/ties
+                  </label>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label for="rankingSystem" class="form-label"
+                  >Ranking System</label
+                >
+                <select
+                  class="form-select"
+                  id="rankingSystem"
+                  name="rankingSystem"
+                >
+                  <option value="elo">Switch Ranking (standard)</option>
+                  <option value="points" selected>Points Based</option>
+                  <option value="wins">Win/Loss Ratio</option>
+                </select>
+              </div>
+
+              <div class="col-12">
+                <div class="card border-info">
+                  <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                      <i class="material-symbols-outlined me-2">schedule</i>
+                      Auto-End Ranking
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="row g-3 mb-3">
+                      <div class="col-md-6">
+                        <label for="autoEndDate" class="form-label">
+                          <i class="material-symbols-outlined me-1"
+                            >calendar_today</i
+                          >
+                          End Date
+                        </label>
+                        <input
+                          type="date"
+                          class="form-control form-control-lg"
+                          id="autoEndDate"
+                          name="autoEndDate"
+                        />
+                      </div>
+                      <div class="col-md-6">
+                        <label for="autoEndTime" class="form-label">
+                          <i class="material-symbols-outlined me-1"
+                            >access_time</i
+                          >
+                          End Time
+                        </label>
+                        <input
+                          type="time"
+                          class="form-control form-control-lg"
+                          id="autoEndTime"
+                          name="autoEndTime"
+                          value="18:00"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="form-check mb-3">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="disableAutoEnd"
+                        name="disableAutoEnd"
+                      />
+                      <label class="form-check-label" for="disableAutoEnd">
+                        <i
+                          class="material-symbols-outlined me-1"
+                          style="font-size: 18px"
+                          >cancel</i
+                        >
+                        Disable automatic ending (run indefinitely)
+                      </label>
+                    </div>
+
+                    <div class="mt-2">
+                      <small class="text-muted">
+                        <i
+                          class="material-symbols-outlined me-1"
+                          style="font-size: 16px"
+                          >info</i
+                        >
+                        Set a date and time to automatically end the ranking.
+                        Check "Disable automatic ending" to run the ranking
+                        indefinitely.
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="d-flex gap-2 justify-content-end">
+                  <a
+                    href="{{ url_for('settingsTrainer') }}"
+                    class="btn btn-secondary d-flex align-items-center justify-content-center"
+                  >
+                    <i class="material-symbols-outlined me-1">arrow_back</i>
+                    Back
+                  </a>
+                  <button
+                    type="submit"
+                    class="btn btn-success d-flex align-items-center justify-content-center"
+                  >
+                    <i class="material-symbols-outlined me-1">save</i>
+                    Save Settings
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ranking Management Section -->
+    <div class="col-12 mt-4">
+      <div class="card shadow-sm border-warning">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">
+            <i class="material-symbols-outlined me-2">sports</i>
+            Ranking Management
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-3">
+            Use these options to manage the current ranking ranking.
+            <strong>End Ranking</strong> will finalize the ranking and display
+            final results, while <strong>Delete</strong> will permanently remove
+            the entire ranking.
+          </p>
+
+          <div class="row g-2">
+            <div class="col-md-6">
+              <button
+                type="button"
+                class="btn btn-warning w-100 d-flex align-items-center justify-content-center"
+                data-bs-toggle="modal"
+                data-bs-target="#endRankingModal"
+              >
+                <i class="material-symbols-outlined me-2">emoji_events</i>
+                End Ranking
+              </button>
+            </div>
+
+            <div class="col-md-6">
+              <button
+                type="button"
+                class="btn btn-danger w-100 d-flex align-items-center justify-content-center"
+                data-bs-toggle="modal"
+                data-bs-target="#deleteRankingModal"
+              >
+                <i class="material-symbols-outlined me-2">delete</i>
+                Delete Ranking
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <small class="text-muted">
+              <i class="material-symbols-outlined me-1" style="font-size: 16px"
+                >emoji_events</i
+              >
+              <strong>End Ranking:</strong> Finalizes the current ranking,
+              displays final results, and prevents new matches.
+              <br />
+              <i class="material-symbols-outlined me-1" style="font-size: 16px"
+                >warning</i
+              >
+              <strong>Delete:</strong> Permanently removes the ranking and all
+              associated data including players and match history.
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %} {% if rankings|length == 0 %}
+    <div class="col-12">
+      <div class="alert alert-info text-center">
+        <h5 class="mb-2">No rankings available</h5>
+        <p class="mb-0">Create a ranking first to configure settings.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+<script>
+  function toggleDateTimeInputs() {
+    const disableCheckbox = document.getElementById("disableAutoEnd");
+    const dateInput = document.getElementById("autoEndDate");
+    const timeInput = document.getElementById("autoEndTime");
+
+    if (!disableCheckbox || !dateInput || !timeInput) {
+      console.warn(
+        "One or more elements not found: disableAutoEnd, autoEndDate, autoEndTime"
+      );
+      return;
+    }
+
+    if (disableCheckbox.checked) {
+      dateInput.disabled = true;
+      timeInput.disabled = true;
+      dateInput.value = "";
+      timeInput.value = "";
+      dateInput.classList.add("text-muted");
+      timeInput.classList.add("text-muted");
+      dateInput.style.backgroundColor = "#f8f9fa";
+      timeInput.style.backgroundColor = "#f8f9fa";
+      dateInput.removeAttribute("required");
+      timeInput.removeAttribute("required");
+    } else {
+      dateInput.disabled = false;
+      timeInput.disabled = false;
+      const today = new Date().toISOString().split("T")[0];
+      dateInput.min = today;
+      if (!dateInput.value) dateInput.value = today;
+      if (!timeInput.value) timeInput.value = "18:00";
+      dateInput.classList.remove("text-muted");
+      timeInput.classList.remove("text-muted");
+      dateInput.style.backgroundColor = "";
+      timeInput.style.backgroundColor = "";
+      // Optionally add back required attributes
+      // dateInput.setAttribute("required", "");
+      // timeInput.setAttribute("required", "");
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    try {
+      toggleDateTimeInputs();
+      const disableCheckbox = document.getElementById("disableAutoEnd");
+      if (disableCheckbox) {
+        disableCheckbox.addEventListener("change", toggleDateTimeInputs);
+      }
+    } catch (error) {
+      console.error("Error initializing date/time inputs:", error);
+    }
+  });
+</script>
 {% endblock %}

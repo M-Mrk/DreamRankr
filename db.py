@@ -24,8 +24,12 @@ class Rankings(db.Model):
     Each ranking can have multiple players with their own positions and points.
     """
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50))        # Ranking category name
-    description = db.Column(db.Text)       # Optional description of the ranking
+    name = db.Column(db.String(50), nullable=False)        # Ranking category name
+    description = db.Column(db.Text, nullable=True)       # Optional description of the ranking
+    tournament = db.Column(db.Boolean, nullable=False)
+    typeTournament = db.Column(db.String(15), nullable=True)
+    endsOn = db.Column(db.DateTime, nullable=True)
+    ended = db.Column(db.Boolean, nullable=False)
 
 class PlayerRankings(db.Model):
     """

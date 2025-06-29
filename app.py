@@ -7,7 +7,7 @@ from db import db, Players, PlayerBonuses, Rankings, PlayerRankings, Authenticat
 
 #TT Ranking files
 from bonuses import updateOrCreatePlayerBonus, validateBonusParameters
-from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes, startList
+from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes, startList, endList, deleteList
 from authentication import requiresViewer, requiresTrainer, authenticate
 from logger import log
 
@@ -89,11 +89,11 @@ def view(rankingId):
     try:
         players = getPlayersOfRanking(rankingId)
         log(1, "view", f"Successfully loaded {len(players)} players for ranking {rankingId}")
-        return render_template('viewer.html', players=players)
+        return render_template('viewer.html', players=players, ranking=db.session.get(Rankings, rankingId))
     except Exception as e:
         log(4, "view", f"Error loading players for ranking {rankingId}: {e}")
         # Return empty players list as fallback
-        return render_template('viewer.html', players=[])
+        return render_template('viewer.html', players=[], ranking=[])
 
 @app.route('/trainer/<int:rankingId>')
 @requiresTrainer
@@ -161,6 +161,19 @@ def startListTrainer():
         startList(listName, description, startingPlayers)
         return redirect('/')
 
+@app.route('/trainer/end', methods=['POST'])
+@requiresTrainer
+def endListTrainer():
+    rankingId = request.form.get('rankingId')
+    endOrDelete = request.form.get('endOrDelete')
+    if endOrDelete == "delete":
+        deleteList(rankingId)
+    elif endOrDelete == "end":
+        endList(rankingId)
+    else:
+        log(4, "/trainer/end", f"Could not determin if user wanted to stop or end list({rankingId}): {endOrDelete}")
+    return redirect('/')
+
 @app.route('/trainer/settings', methods=['GET', 'POST'])
 @requiresTrainer
 def settingsTrainer():
@@ -168,7 +181,20 @@ def settingsTrainer():
     if request.method == 'POST':
         rankingId = request.form.get('rankingId')
         session['selectedRankingId'] = rankingId
-        return redirect('/trainer/settings')
+        endingDate = request.form.get('endingDate')
+        sortBy = request.form.get('sortBy')
+        if endingDate or sortBy:
+            ranking = db.session.get(Rankings, rankingId)
+            if endingDate:
+                if endingDate == "none":
+                    ranking.endsOn = ""
+                else:
+                    ranking.endsOn = datetime.fromisoformat(endingDate)
+            if sortBy:
+                # Handle sortBy logic here
+                pass
+        else:
+            return redirect('/trainer/settings')
     else:
         if session.get('selectedRankingId'):
             rankingId = session['selectedRankingId']
