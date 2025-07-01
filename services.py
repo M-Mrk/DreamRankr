@@ -3,6 +3,7 @@ from playerStats import changeStats
 from bonuses import getBonus
 from logger import log
 import datetime as dt
+from functools import wraps
 
 class RankingObj:
     def __init__(self, ranking=None, points=None, lastRanking=None, lastRankingChanged=None):
@@ -629,5 +630,9 @@ def checkAllRankings():
         if ranking.endsOn:
             checkIfRankingEnded(ranking.id)
 
-def checkBeforeRendering():
-    checkAllRankings()
+def checkBeforeRendering(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        checkAllRankings()
+        return f(*args, **kwargs)
+    return decorated_function
