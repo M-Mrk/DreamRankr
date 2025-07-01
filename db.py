@@ -26,10 +26,11 @@ class Rankings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)        # Ranking category name
     description = db.Column(db.Text, nullable=True)       # Optional description of the ranking
-    tournament = db.Column(db.Boolean, nullable=False)
+    sortedBy = db.Column(db.String(20), nullable=False, default="standard")
+    tournament = db.Column(db.Boolean, nullable=False, default=False)
     typeTournament = db.Column(db.String(15), nullable=True)
     endsOn = db.Column(db.DateTime, nullable=True)
-    ended = db.Column(db.Boolean, nullable=False)
+    ended = db.Column(db.Boolean, nullable=False, default=False)
 
 class PlayerRankings(db.Model):
     """

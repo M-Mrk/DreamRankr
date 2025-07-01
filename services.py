@@ -1,7 +1,8 @@
-from db import db, PlayerRankings, Players, OnGoingMatches, PlayerBonuses, FinishedMatches, Rankings
+from db import db, PlayerRankings, Players, OnGoingMatches, PlayerBonuses, FinishedMatches, Rankings, LogEntries
 from playerStats import changeStats
 from bonuses import getBonus
 from logger import log
+import datetime as dt
 
 class RankingObj:
     def __init__(self, ranking=None, points=None, lastRanking=None, lastRankingChanged=None):
@@ -62,13 +63,23 @@ def getPlayersOfRanking(rankingId):
     Returns all players in a ranking, ordered by their ranking.
     """
     try:
+        ranking = db.session.get(Rankings, rankingId)
+        if not ranking:
+            log(3, "getPlayersOfRanking", f"Ranking with ID {rankingId} does not exist")
+            return []
+            
+        if ranking.sortedBy == "points":
+            order_column = PlayerRankings.points.desc()  # Descending for points
+        else:  # Default to standard ranking
+            order_column = PlayerRankings.ranking.asc()  # Ascending for ranking
+
         players = db.session.query(Players).join(
             PlayerRankings, Players.id == PlayerRankings.playerId
-        ).filter(PlayerRankings.rankingId == rankingId).order_by(
-            PlayerRankings.ranking
-        ).all()
+        ).filter(PlayerRankings.rankingId == rankingId).order_by(order_column).all()
+        
         for player in players:
             setRankingAndPointsToObj(player, rankingId)
+            
         log(1, "getPlayersOfRanking", f"Fetched players for ranking {rankingId}")
         return players
     except Exception as e:
@@ -197,6 +208,49 @@ def removePlayerFromRanking(playerId, rankingId):
         log(4, "removePlayerFromRanking", f"Could not remove Player {playerId}, because of {e}")
         return
 
+def deleteMatchesByPlayer(playerId):
+    """
+    Deletes all ongoing matches where the player is either challenger or defender.
+    
+    Args:
+        playerId: ID of the player whose matches should be deleted
+    """
+    if not playerId:
+        log(3, "deleteMatchesByPlayer", "No playerId provided")
+        return False
+        
+    try:
+        player = db.session.get(Players, playerId)
+        if not player:
+            log(3, "deleteMatchesByPlayer", f"Player with ID {playerId} does not exist")
+            return False
+            
+        challengerMatches = OnGoingMatches.query.filter_by(challengerId=playerId).all()
+        defenderMatches = OnGoingMatches.query.filter_by(defenderId=playerId).all()
+        
+        total_matches = len(challengerMatches) + len(defenderMatches)
+        
+        if total_matches == 0:
+            log(1, "deleteMatchesByPlayer", f"No ongoing matches found for player {player.name}({playerId})")
+            return True
+            
+        # Delete challenger matches
+        for match in challengerMatches:
+            db.session.delete(match)
+            
+        # Delete defender matches  
+        for match in defenderMatches:
+            db.session.delete(match)
+            
+        db.session.commit()
+        log(1, "deleteMatchesByPlayer", f"Successfully deleted {total_matches} ongoing matches for player {player.name}({playerId})")
+        return True
+        
+    except Exception as e:
+        db.session.rollback()
+        log(4, "deleteMatchesByPlayer", f"Could not delete matches for player {playerId}: {e}")
+        return False
+
 def deletePlayer(playerId):
     """
     Deletes a player and all their ranking entries.
@@ -209,6 +263,7 @@ def deletePlayer(playerId):
         if not player:
             log(3, "deletePlayer", f"Player with ID {playerId} does not exist")
             return
+        deleteMatchesByPlayer(playerId)
         db.session.delete(player)
         db.session.commit()
         log(1, "deletePlayer", f"Deleted player {playerId} and their rankings")
@@ -417,3 +472,162 @@ def deleteList(rankingId):
         except Exception as e:
             db.session.rollback()
             log(4, "deleteList", f"Could not delete ranking {rankingId}, because of {e}")
+
+def changeEndingDate(rankingId, datetime):
+    """
+    Changes the ending date for a ranking.
+    
+    Args:
+        rankingId: ID of the ranking to update
+        datetime: New ending date (datetime object or ISO format string)
+    """
+    try:
+        ranking = db.session.get(Rankings, rankingId)
+        if not ranking:
+            log(3, "changeEndingDate", f"Ranking with ID {rankingId} does not exist")
+            return False
+            
+        if not isinstance(datetime, dt.datetime):
+            # Try to convert if it's an ISO format string
+            if isinstance(datetime, str):
+                try:
+                    datetime = dt.datetime.fromisoformat(datetime)
+                    log(1, "changeEndingDate", f"Converted string datetime to datetime object for ranking {rankingId}")
+                except ValueError as e:
+                    log(3, "changeEndingDate", f"Invalid datetime format provided for ranking {rankingId}: {e}")
+                    return
+            else:
+                log(3, "changeEndingDate", f"Invalid datetime object type provided for ranking {rankingId}. Expected datetime or string, got {type(datetime)}")
+                return
+        
+        old_date = ranking.endsOn
+        ranking.endsOn = datetime
+        db.session.commit()
+        log(1, "changeEndingDate", f"Successfully changed ending date for ranking {rankingId} from {old_date} to {datetime}")
+        return 
+        
+    except Exception as e:
+        db.session.rollback()
+        log(4, "changeEndingDate", f"Could not change ending date for ranking {rankingId}: {e}")
+        return
+    
+def changeSortingRanking(rankingId, setting):
+    """
+    Changes the sorting setting for a ranking.
+    
+    Args:
+        rankingId: ID of the ranking to update
+        setting: New sorting option ("standard", "points", or "wins")
+    """
+    try:
+        if not rankingId or not setting:
+            log(3, "changeSortingRanking", f"Missing required parameters. rankingId: {rankingId}, setting: {setting}")
+            return False
+            
+        ranking = db.session.get(Rankings, rankingId)
+        if not ranking:
+            log(3, "changeSortingRanking", f"Ranking with ID {rankingId} does not exist")
+            return False
+            
+        options = ["standard", "points"]
+        changed = False
+
+        if setting not in options:
+            log(3, "changeSortingRanking", f"Invalid sorting option '{setting}' for ranking {rankingId}. Valid options: {options}")
+            return False
+
+        old_setting = getattr(ranking, 'sortedBy', None)
+        
+        for option in options:
+            if setting == option:
+                ranking.sortedBy = option
+                changed = True
+                break
+
+        if changed:
+            db.session.commit()
+            log(1, "changeSortingRanking", f"Successfully changed sorting for ranking {rankingId} from '{old_setting}' to '{setting}'")
+            return True
+        else:
+            db.session.rollback()
+            log(3, "changeSortingRanking", f"No changes made to sorting for ranking {rankingId}")
+            return False
+            
+    except Exception as e:
+        db.session.rollback()
+        log(4, "changeSortingRanking", f"Could not change sorting for ranking {rankingId}: {e}")
+        return False
+    
+def clearLogs():
+    """
+    Clears all log entries from the database.
+    """
+    try:
+        allLogs = LogEntries.query.all()
+        log_count = len(allLogs)
+        
+        if log_count == 0:
+            log(1, "clearLogs", "No logs found to clear")
+            return True
+            
+        for log_entry in allLogs:
+            db.session.delete(log_entry)
+            
+        db.session.commit()
+        log(1, "clearLogs", f"Successfully cleared {log_count} log entries")
+        return True
+        
+    except Exception as e:
+        db.session.rollback()
+        log(4, "clearLogs", f"Could not clear logs: {e}")
+        return False
+    
+def checkIfRankingEnded(rankingId):
+    """
+    Checks if a ranking has ended based on its end date and updates the status accordingly.
+    
+    Args:
+        rankingId: ID of the ranking to check
+    """
+    try:
+        if not rankingId:
+            log(3, "checkIfRankingEnded", "No rankingId provided")
+            return False
+            
+        ranking = db.session.get(Rankings, rankingId)
+        if not ranking:
+            log(3, "checkIfRankingEnded", f"Ranking with ID {rankingId} does not exist")
+            return False
+            
+        if not ranking.endsOn:
+            log(1, "checkIfRankingEnded", f"Ranking {rankingId} has no end date set")
+            return False
+            
+        current_time = dt.datetime.now(dt.timezone.utc)
+        
+        if ranking.endsOn <= current_time and not ranking.ended:
+            old_status = ranking.ended
+            ranking.ended = True
+            db.session.commit()
+            log(1, "checkIfRankingEnded", f"Ranking {rankingId} has ended. Status changed from {old_status} to {ranking.ended}")
+            return True
+        elif ranking.endsOn > current_time:
+            log(1, "checkIfRankingEnded", f"Ranking {rankingId} is still active. Ends on: {ranking.endsOn}")
+            return False
+        else:
+            log(1, "checkIfRankingEnded", f"Ranking {rankingId} was already marked as ended")
+            return False
+            
+    except Exception as e:
+        db.session.rollback()
+        log(4, "checkIfRankingEnded", f"Could not check if ranking {rankingId} has ended: {e}")
+        return False
+    
+def checkAllRankings():
+    allRankings = Rankings.query.all()
+    for ranking in allRankings:
+        if ranking.endsOn:
+            checkIfRankingEnded(ranking.id)
+
+def checkBeforeRendering():
+    checkAllRankings()

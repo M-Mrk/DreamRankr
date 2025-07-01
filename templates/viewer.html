@@ -1,7 +1,10 @@
 {% extends "base.html" %} {% block content %} {% if ranking.ended == True %}
 <!-- Ranking Ended - Show Podium -->
 <div class="alert alert-success text-center mb-4">
-<h4 class="mb-2"><i class="material-icons">emoji_events</i> Ranking Completed! <i class="material-icons">emoji_events</i></h4>
+  <h4 class="mb-2">
+    <i class="material-icons">emoji_events</i> Ranking Completed!
+    <i class="material-icons">emoji_events</i>
+  </h4>
   <p class="mb-0">Congratulations to all participants!</p>
 </div>
 
@@ -140,12 +143,44 @@
 </div>
 {% endif %} {% endif %}
 
+<!-- Add ranking indicator above the table -->
+<div class="d-flex align-items-center mb-3">
+  <div class="d-flex align-items-center">
+    <span class="material-icons text-muted me-2" style="font-size: 20px"
+      >sort</span
+    >
+    <span class="text-muted">Ranked by: </span>
+    {% if ranking.sortedBy == "standard" %}
+    <span class="badge bg-primary ms-1">Position</span>
+    {% else %}
+    <span class="badge bg-success ms-1">Points</span>
+    {% endif %}
+  </div>
+</div>
+
 <div class="table-responsive">
   <table class="table table-striped table-hover">
     <thead class="table-dark">
       <tr>
-        <th>Ranking</th>
-        <th></th>
+        {% if ranking.sortedBy == "standard" %}
+        <th>
+          <div class="d-flex align-items-center">
+            <span class="material-icons me-1" style="font-size: 16px"
+              >military_tech</span
+            >
+            Ranking
+          </div>
+        </th>
+        {% else %}
+        <th>
+          <div class="d-flex align-items-center">
+            <span class="material-icons me-1" style="font-size: 16px"
+              >trending_up</span
+            >
+            Position
+          </div>
+        </th>
+        {% endif %}
         <th>Spieler</th>
         <th>Points</th>
         <th>Siege</th>
@@ -158,23 +193,26 @@
     <tbody>
       {% for player in players %}
       <tr>
+        {% if ranking.sortedBy == "standard" %}
         <td><strong>{{ player.ranking }}</strong></td>
+        {% else %}
+        <td><strong>{{ loop.index }}</strong></td>
+        {% endif %}
         <td>
           {% if player.lastRanking and player.lastRankingChanged %} {% set
           hours_since_change = (now() -
           player.lastRankingChanged).total_seconds() / 3600 %} {% if
           hours_since_change <= 12 %} {% if player.lastRanking < player.ranking
           %}
-          <span class="badge bg-danger">
+          <span class="badge bg-danger me-2">
             <i class="fs-5">↓</i>
           </span>
           {% elif player.lastRanking > player.ranking %}
-          <span class="badge bg-success">
+          <span class="badge bg-success me-2">
             <i class="fs-5">↑</i>
           </span>
-          {% endif %} {% endif %} {% endif %}
+          {% endif %} {% endif %} {% endif %} {{ player.name }}
         </td>
-        <td>{{ player.name }}</td>
         <td>{{ player.points }}</td>
         <td>{{ player.wins }}</td>
         <td>{{ player.losses }}</td>

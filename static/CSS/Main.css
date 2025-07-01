@@ -166,3 +166,29 @@
 .vertical-align-bottom { 
     vertical-align: bottom; 
 }
+
+/* Material Icons Alignment - Improved */
+.material-symbols-outlined {
+    vertical-align: -0.125em; /* Fine-tuned baseline alignment */
+    line-height: 1;
+}
+
+/* Specific adjustments for different icon sizes */
+.material-symbols-outlined[style*="font-size: 16px"] {
+    vertical-align: -0.1em; /* Slightly less offset for smaller icons */
+}
+
+.material-symbols-outlined[style*="font-size: 18px"] {
+    vertical-align: -0.1em; /* Slightly less offset for smaller icons */
+}
+
+/* For icons in buttons and larger elements */
+.btn .material-symbols-outlined,
+h1 .material-symbols-outlined,
+h2 .material-symbols-outlined,
+h3 .material-symbols-outlined,
+h4 .material-symbols-outlined,
+h5 .material-symbols-outlined,
+h6 .material-symbols-outlined {
+    vertical-align: -0.15em; /* Better alignment for larger text */
+}

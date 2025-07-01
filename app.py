@@ -7,7 +7,7 @@ from db import db, Players, PlayerBonuses, Rankings, PlayerRankings, Authenticat
 
 #TT Ranking files
 from bonuses import updateOrCreatePlayerBonus, validateBonusParameters
-from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes, startList, endList, deleteList
+from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes, startList, endList, deleteList, clearLogs, checkBeforeRendering
 from authentication import requiresViewer, requiresTrainer, authenticate
 from logger import log
 
@@ -49,6 +49,7 @@ def logOut():
 
 @app.route('/')
 @requiresViewer
+@checkBeforeRendering
 def home():
     """
     Renders the home page displaying all available rankings.
@@ -72,6 +73,7 @@ def home():
 
 @app.route('/view/<int:rankingId>')
 @requiresViewer
+@checkBeforeRendering
 def view(rankingId):
     """
     Renders the viewer page for a specific ranking.
@@ -97,6 +99,7 @@ def view(rankingId):
 
 @app.route('/trainer/<int:rankingId>')
 @requiresTrainer
+@checkBeforeRendering
 def trainer(rankingId):
     """
     Renders the trainer page for managing a specific ranking.
@@ -114,6 +117,7 @@ def trainer(rankingId):
     try:
         # Get players in the ranking with their bonus information
         players = getPlayersOfRanking(rankingId)
+        ranking = db.session.get(Rankings, rankingId)
         
         # Add bonus information to each player for display in the interface
         for player in players:
@@ -134,7 +138,8 @@ def trainer(rankingId):
         return render_template('trainer.html', 
                              players=players, 
                              activeMatches=activeMatches, 
-                             rankingId=rankingId, 
+                             rankingId=rankingId,
+                             ranking=ranking, 
                              allPlayers=allPlayers)
                              
     except Exception as e:
@@ -156,10 +161,22 @@ def startListTrainer():
         listName = request.form.get('listName')
         description = request.form.get('description')
         startingPlayers = request.form.getlist('startingPlayers')
-        # type = request.form.get('type')
+        isTournament = request.form.get('isTournament')
+        typeOfTournament = request.form.get('typeOfTournament')
+        if isTournament and typeOfTournament:
+            #Do something
+            print("")
+        else:
+            isTournament == False
+            typeOfTournament == ""
 
-        startList(listName, description, startingPlayers)
+        startList(listName, description, startingPlayers, isTournament, typeOfTournament)
         return redirect('/')
+    
+@app.route('/deleteLogs')
+def deleteLogs():
+    clearLogs()
+    return redirect('/')
 
 @app.route('/trainer/end', methods=['POST'])
 @requiresTrainer
@@ -176,25 +193,45 @@ def endListTrainer():
 
 @app.route('/trainer/settings', methods=['GET', 'POST'])
 @requiresTrainer
+@checkBeforeRendering
 def settingsTrainer():
     rankingId = None
     if request.method == 'POST':
         rankingId = request.form.get('rankingId')
         session['selectedRankingId'] = rankingId
-        endingDate = request.form.get('endingDate')
-        sortBy = request.form.get('sortBy')
-        if endingDate or sortBy:
+        
+        # Parse form arguments correctly based on the HTML form fields
+        allowDraws = request.form.get('allowDraws')  # checkbox
+        rankingSystem = request.form.get('rankingSystem')  # select dropdown
+        autoEndDate = request.form.get('autoEndDate')  # date input
+        autoEndTime = request.form.get('autoEndTime')  # time input
+        disableAutoEnd = request.form.get('disableAutoEnd')  # checkbox
+        
+        # Update ranking settings based on parsed form data
+        if rankingId:
             ranking = db.session.get(Rankings, rankingId)
-            if endingDate:
-                if endingDate == "none":
-                    ranking.endsOn = ""
-                else:
-                    ranking.endsOn = datetime.fromisoformat(endingDate)
-            if sortBy:
-                # Handle sortBy logic here
-                pass
-        else:
-            return redirect('/trainer/settings')
+            if ranking:
+                # Handle allowDraws checkbox
+                # if allowDraws:
+                #     ranking.allowDraws = True
+                # else:
+                #     ranking.allowDraws = False
+                
+                # Handle ranking system
+                if rankingSystem:
+                    ranking.sortedBy = rankingSystem
+                
+                # Handle auto-end date/time
+                if disableAutoEnd:
+                    ranking.endsOn = None
+                elif autoEndDate and autoEndTime:
+                    # Combine date and time into datetime
+                    datetime_str = f"{autoEndDate} {autoEndTime}"
+                    ranking.endsOn = datetime.fromisoformat(datetime_str)
+                
+                db.session.commit()
+        
+        return redirect('/trainer/settings')
     else:
         if session.get('selectedRankingId'):
             rankingId = session['selectedRankingId']
@@ -202,9 +239,12 @@ def settingsTrainer():
     try:
         rankings = Rankings.query.all()
         allPlayers = Players.query.order_by(Players.wins.desc()).all()
-        # Fix: Use assignment (=) instead of comparison (==)
+        currentRanking = None
+        if rankingId:
+            currentRanking = db.session.get(Rankings, rankingId)
+        
         session['selectedRankingId'] = ""
-        return render_template('settingsTrainer.html', rankings=rankings, allPlayers=allPlayers, rankingId=rankingId)
+        return render_template('settingsTrainer.html', rankings=rankings, allPlayers=allPlayers, rankingId=rankingId, currentRanking=currentRanking)
     except Exception as e:
         log(4, "settingsTrainer", f"Error loading rankings for home page: {e}")
         return render_template('settingsTrainer.html', rankings=[], allPlayers=[])
@@ -310,7 +350,7 @@ def finish_match():
         # Finish the match
         endMatch(matchId, rankingId, winnerId, challengerScore, defenderScore)
         log(1, "finish_match", f"Finished match {matchId} in ranking {rankingId}, winner: {winnerId}")
-        
+       
     except ValueError as e:
         log(4, "finish_match", f"Invalid parameter values: {e}")
     except Exception as e:
