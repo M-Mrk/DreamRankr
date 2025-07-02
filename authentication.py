@@ -10,7 +10,6 @@ def requiresViewer(f):
     def decorated_function(*args, **kwargs):
         # Auth check here
         if not session.get('authenticated'):
-            print("session is not authenticated")
             return redirect(url_for('login'))
         
         permissionLevel = session.get('permissionLevel')
@@ -26,12 +25,10 @@ def requiresTrainer(f):
     def decorated_function(*args, **kwargs):
         # Auth check here
         if not session.get('authenticated'):
-            print("Not authenticated")
             return redirect(url_for('login'))
         
         permissionLevel = session.get('permissionLevel')
         if not permissionLevel == 'trainer':
-            print(f"wrong permission: {permissionLevel}")
             return redirect(url_for('login'))
         
         # Pass ALL arguments to the original function
@@ -52,7 +49,6 @@ def authenticate(password, request):
     authentications = Authentication.query.all()
     for authentication in authentications:
         if check_password_hash(authentication.passwordHash, password):
-            print(authentication.name)
             session.clear()
             session.permanent = True
             session['authenticated'] = True
