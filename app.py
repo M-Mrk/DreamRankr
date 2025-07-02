@@ -7,14 +7,54 @@ from db import db, Players, PlayerBonuses, Rankings, PlayerRankings, Authenticat
 
 #TT Ranking files
 from bonuses import updateOrCreatePlayerBonus, validateBonusParameters
-from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes, startList, endList, deleteList, clearLogs, checkBeforeRendering
+from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes, startList, endList, deleteList, clearLogs, checkBeforeRendering, checkRankingAndFix
 from authentication import requiresViewer, requiresTrainer, authenticate
 from logger import log
 
 #Third party libaries
 from datetime import datetime, timezone, timedelta
+import datetime as dt
 import os
 from werkzeug.security import generate_password_hash
+import zoneinfo
+
+# =============================================================================
+# TIMEZONE CONFIGURATION
+# =============================================================================
+# Set your local timezone here - this will be used for all user inputs
+# that don't explicitly specify a timezone (like date/time form inputs)
+LOCAL_TIMEZONE = "Europe/Berlin"  # Change this to your actual timezone
+LOCAL_TZ = zoneinfo.ZoneInfo(LOCAL_TIMEZONE)
+
+def get_local_timezone():
+    """Returns the configured local timezone for the application"""
+    return LOCAL_TZ
+
+def convert_local_to_utc(local_datetime):
+    """
+    Converts a local timezone-naive datetime to UTC
+    Args:
+        local_datetime: datetime object assumed to be in LOCAL_TIMEZONE
+    Returns:
+        datetime object in UTC timezone
+    """
+    if local_datetime.tzinfo is None:
+        local_datetime = local_datetime.replace(tzinfo=LOCAL_TZ)
+    return local_datetime.astimezone(dt.timezone.utc)
+
+def convert_utc_to_local(utc_datetime):
+    """
+    Converts UTC datetime to local timezone for display
+    Args:
+        utc_datetime: datetime object in UTC
+    Returns:
+        datetime object in LOCAL_TIMEZONE
+    """
+    if utc_datetime.tzinfo is None:
+        utc_datetime = utc_datetime.replace(tzinfo=dt.timezone.utc)
+    return utc_datetime.astimezone(LOCAL_TZ)
+
+# =============================================================================
 
 # Initialize Flask application with database configuration
 app = Flask(__name__)
@@ -201,7 +241,6 @@ def settingsTrainer():
         session['selectedRankingId'] = rankingId
         
         # Parse form arguments correctly based on the HTML form fields
-        allowDraws = request.form.get('allowDraws')  # checkbox
         rankingSystem = request.form.get('rankingSystem')  # select dropdown
         autoEndDate = request.form.get('autoEndDate')  # date input
         autoEndTime = request.form.get('autoEndTime')  # time input
@@ -211,12 +250,6 @@ def settingsTrainer():
         if rankingId:
             ranking = db.session.get(Rankings, rankingId)
             if ranking:
-                # Handle allowDraws checkbox
-                # if allowDraws:
-                #     ranking.allowDraws = True
-                # else:
-                #     ranking.allowDraws = False
-                
                 # Handle ranking system
                 if rankingSystem:
                     ranking.sortedBy = rankingSystem
@@ -225,9 +258,23 @@ def settingsTrainer():
                 if disableAutoEnd:
                     ranking.endsOn = None
                 elif autoEndDate and autoEndTime:
-                    # Combine date and time into datetime
-                    datetime_str = f"{autoEndDate} {autoEndTime}"
-                    ranking.endsOn = datetime.fromisoformat(datetime_str)
+                    try:
+                        # Combine date and time into datetime with proper timezone handling
+                        datetime_str = f"{autoEndDate} {autoEndTime}"
+                        end_datetime = dt.datetime.fromisoformat(datetime_str)
+                        
+                        # Convert from local timezone to UTC using the configured timezone
+                        end_datetime_utc = convert_local_to_utc(end_datetime)
+                        
+                        # Validate that end date is in the future
+                        if end_datetime_utc <= dt.datetime.now(dt.timezone.utc):
+                            flash("End date must be in the future", "error")
+                            return redirect('/trainer/settings')
+                            
+                        ranking.endsOn = end_datetime_utc
+                    except ValueError as e:
+                        flash("Invalid date/time format", "error")
+                        return redirect('/trainer/settings')
                 
                 db.session.commit()
         
@@ -243,11 +290,34 @@ def settingsTrainer():
         if rankingId:
             currentRanking = db.session.get(Rankings, rankingId)
         
+        # Convert UTC times to local timezone for display
+        currentRankingWithLocalTime = None
+        if currentRanking and currentRanking.endsOn:
+            # Create a copy of the ranking object with local time
+            import copy
+            currentRankingWithLocalTime = copy.copy(currentRanking)
+            currentRankingWithLocalTime.endsOn = convert_utc_to_local(currentRanking.endsOn)
+        elif currentRanking:
+            currentRankingWithLocalTime = currentRanking
+        
         session['selectedRankingId'] = ""
-        return render_template('settingsTrainer.html', rankings=rankings, allPlayers=allPlayers, rankingId=rankingId, currentRanking=currentRanking)
+        return render_template(
+            'settingsTrainer.html',
+            rankings=rankings,
+            rankingId=rankingId,
+            currentRanking=currentRankingWithLocalTime,  # Pass the version with local time
+            allPlayers=allPlayers
+        )
     except Exception as e:
         log(4, "settingsTrainer", f"Error loading rankings for home page: {e}")
         return render_template('settingsTrainer.html', rankings=[], allPlayers=[])
+
+@app.route('/trainer/fix', methods=['POST'])
+@requiresTrainer
+def fixRankingTrainer():
+    rankingId = request.form.get('rankingId')
+    checkRankingAndFix(rankingId)
+    return redirect('/trainer/settings')
 
 @app.route('/trainer/start_match', methods=['POST'])
 @requiresTrainer

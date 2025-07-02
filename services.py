@@ -180,6 +180,46 @@ def addPlayerToRanking(playerId, rankingId):
         db.session.rollback()
         log(4, "addPlayerToRanking", f"Could not import player {playerId} to ranking {rankingId}, because of {e}")
 
+def checkForGapInRanking(rankingId):
+    """
+    Checks for gaps in the ranking order and fixes them if necessary.
+    
+    Args:
+        rankingId: ID of the ranking to check.
+    """
+    try:
+        rankingEntries = PlayerRankings.query.filter_by(rankingId=rankingId).order_by(PlayerRankings.ranking.asc()).all()
+        log(1, "checkForGapInRanking", f"Found {len(rankingEntries)} entries: {[r.ranking for r in rankingEntries]}")
+        if not rankingEntries:
+            log(3, "checkForGapInRanking", f"No ranking entries found for ranking ID {rankingId}")
+            return False
+        
+        if rankingEntries[0].ranking != 1:
+            rankingEntries[0].ranking = 1
+
+        rankingEntryBefore = rankingEntries[0].ranking
+        
+        for ranking in rankingEntries[1:]:
+            if rankingEntryBefore + 1 == ranking.ranking:
+                rankingEntryBefore = ranking.ranking
+                continue
+            else:
+                log(1, "checkForGapInRanking", f"Gap detected in ranking ID {rankingId}. Fixing...")
+                difference = ranking.ranking - (rankingEntryBefore + 1)
+                ranking.ranking -= difference
+                if ranking.lastRanking:
+                    ranking.lastRanking -= difference
+                rankingEntryBefore = ranking.ranking
+
+        db.session.commit()
+        log(1, "checkForGapInRanking", f"Successfully checked and fixed gaps in ranking ID {rankingId}")
+        return True
+
+    except Exception as e:
+        db.session.rollback()
+        log(4, "checkForGapInRanking", f"Error while checking for gaps in ranking ID {rankingId}: {e}")
+        return False
+
 def removePlayerFromRanking(playerId, rankingId):
     """
     Removes a player from a ranking.
@@ -203,6 +243,7 @@ def removePlayerFromRanking(playerId, rankingId):
     try:
         db.session.delete(playerRankingEntry)
         db.session.commit()
+        checkForGapInRanking(rankingId)
         log(1, "removePlayerFromRanking", f"Removed player {playerId} from ranking {rankingId}")
     except Exception as e:
         db.session.rollback()
@@ -258,7 +299,9 @@ def deletePlayer(playerId):
     """
     try:
         playerRanking = PlayerRankings.query.filter_by(playerId=playerId).all()
+        rankingIds = []
         for ranking in playerRanking:
+            rankingIds.append(ranking.rankingId)
             db.session.delete(ranking)
         player = db.session.get(Players, playerId)
         if not player:
@@ -267,6 +310,9 @@ def deletePlayer(playerId):
         deleteMatchesByPlayer(playerId)
         db.session.delete(player)
         db.session.commit()
+
+        for rankingId in rankingIds:
+            checkForGapInRanking(rankingId)
         log(1, "deletePlayer", f"Deleted player {playerId} and their rankings")
     except Exception as e:
         db.session.rollback()
@@ -474,13 +520,13 @@ def deleteList(rankingId):
             db.session.rollback()
             log(4, "deleteList", f"Could not delete ranking {rankingId}, because of {e}")
 
-def changeEndingDate(rankingId, datetime):
+def changeEndingDate(rankingId, datetime_input):
     """
-    Changes the ending date for a ranking.
+    Changes the ending date for a ranking with proper timezone handling.
     
     Args:
         rankingId: ID of the ranking to update
-        datetime: New ending date (datetime object or ISO format string)
+        datetime_input: New ending date (datetime object or ISO format string)
     """
     try:
         ranking = db.session.get(Rankings, rankingId)
@@ -488,29 +534,38 @@ def changeEndingDate(rankingId, datetime):
             log(3, "changeEndingDate", f"Ranking with ID {rankingId} does not exist")
             return False
             
-        if not isinstance(datetime, dt.datetime):
+        if not isinstance(datetime_input, dt.datetime):
             # Try to convert if it's an ISO format string
-            if isinstance(datetime, str):
+            if isinstance(datetime_input, str):
                 try:
-                    datetime = dt.datetime.fromisoformat(datetime)
+                    datetime_input = dt.datetime.fromisoformat(datetime_input)
                     log(1, "changeEndingDate", f"Converted string datetime to datetime object for ranking {rankingId}")
                 except ValueError as e:
                     log(3, "changeEndingDate", f"Invalid datetime format provided for ranking {rankingId}: {e}")
-                    return
+                    return False
             else:
-                log(3, "changeEndingDate", f"Invalid datetime object type provided for ranking {rankingId}. Expected datetime or string, got {type(datetime)}")
-                return
+                log(3, "changeEndingDate", f"Invalid datetime object type provided for ranking {rankingId}. Expected datetime or string, got {type(datetime_input)}")
+                return False
+        
+        # Ensure timezone awareness
+        if datetime_input.tzinfo is None:
+            log(2, "changeEndingDate", f"Datetime is timezone-naive for ranking {rankingId}, assuming UTC")
+            datetime_input = datetime_input.replace(tzinfo=dt.timezone.utc)
+        
+        # Convert to UTC for consistent storage
+        if datetime_input.tzinfo != dt.timezone.utc:
+            datetime_input = datetime_input.astimezone(dt.timezone.utc)
         
         old_date = ranking.endsOn
-        ranking.endsOn = datetime
+        ranking.endsOn = datetime_input
         db.session.commit()
-        log(1, "changeEndingDate", f"Successfully changed ending date for ranking {rankingId} from {old_date} to {datetime}")
-        return 
+        log(1, "changeEndingDate", f"Successfully changed ending date for ranking {rankingId} from {old_date} to {datetime_input}")
+        return True
         
     except Exception as e:
         db.session.rollback()
         log(4, "changeEndingDate", f"Could not change ending date for ranking {rankingId}: {e}")
-        return
+        return False
     
 def changeSortingRanking(rankingId, setting):
     """
@@ -603,8 +658,18 @@ def checkIfRankingEnded(rankingId):
         if not ranking.endsOn:
             log(1, "checkIfRankingEnded", f"Ranking {rankingId} has no end date set")
             return False
+        
+        # Ensure ranking.endsOn is timezone-aware
+        if ranking.endsOn.tzinfo is None:
+            log(1, "checkIfRankingEnded", f"Ranking {rankingId} end date is timezone-naive, assuming UTC")
+            ranking.endsOn = ranking.endsOn.replace(tzinfo=dt.timezone.utc)
+            db.session.commit()
             
         current_time = dt.datetime.now(dt.timezone.utc)
+        
+        # Convert ranking.endsOn to UTC if it is timezone-naive
+        if ranking.endsOn.tzinfo is None:
+            ranking.endsOn = ranking.endsOn.replace(tzinfo=dt.timezone.utc)
         
         if ranking.endsOn <= current_time and not ranking.ended:
             old_status = ranking.ended
@@ -636,3 +701,6 @@ def checkBeforeRendering(f):
         checkAllRankings()
         return f(*args, **kwargs)
     return decorated_function
+
+def checkRankingAndFix(rankingId):
+    checkForGapInRanking(rankingId)

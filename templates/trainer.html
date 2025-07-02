@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Trainer Management</h1>
+<h1>{{ ranking.name }}</h1>
 
 <!-- Challenge Modal -->
 <div class="modal fade" id="challengeWindow" tabindex="-1" aria-labelledby="challengeWindowLabel" aria-hidden="true">
@@ -293,6 +293,10 @@
                     {% else %}
                         <span class="badge bg-success ms-1">Points</span>
                     {% endif %}
+
+                    {% if ranking.ended == True %}
+                        <span class="badge bg-warning mx-2">Ended</span>
+                    {% endif %}
                 </div>
             </div>
             <div class="table-responsive" style="max-height: 70vh;">
@@ -340,7 +344,8 @@
                                             data-bs-target="#challengeWindow"
                                             data-player-id="{{ player.id }}"
                                             data-player-name="{{ player.name }}"
-                                            title="Challenge">
+                                            title="Challenge"
+                                            {% if ranking.ended == True %} disabled {% endif %}>
                                         <span class="material-symbols-outlined px-2" style="font-size: 20px;">swords</span>
                                     </button>
                                     <button class="btn btn-secondary btn-sm edit-btn" 
@@ -356,7 +361,8 @@
                                             data-player-bonus="{{ player.bonus.bonus if player.bonus else '' }}"
                                             data-player-logic-operator="{{ player.bonus.logicOperator if player.bonus else '' }}"
                                             data-player-limit-ranking="{{ player.bonus.limitRanking if player.bonus else '' }}"
-                                            title="Edit">
+                                            title="Edit"
+                                            {% if ranking.ended == True %} disabled {% endif %}>
                                         <span class="material-icons px-2" style="font-size: 20px;">edit</span>
                                     </button>
                                 </div>
@@ -372,168 +378,172 @@
         <div class="col-12 col-lg-4">
             <!-- Active Challenges Section -->
             <div class="mb-4">
-                <div class="d-flex align-items-center mb-3">
-                    <h4 class="mb-0 me-2">Active Challenges</h4>
-                    <hr class="flex-grow-1">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" 
-                            data-bs-toggle="offcanvas" 
-                            data-bs-target="#activeMatchesSettings" 
-                            aria-controls="activeMatchesSettings"
-                            data-bs-toggle="tooltip" 
-                            title="Settings">
-                        <span class="material-icons" style="font-size: 16px;">settings</span>
-                    </button>
-                </div>
-                <div class="activeMatches">
-                    {% if activeMatches %}
-                        <div id="activeMatchesCarousel" class="carousel slide">
-                            <div class="carousel-inner">
-                                <div class="carousel-item active">
-                                    <div class="bg-light p-3 rounded text-center">
-                                        <div class="row align-items-center">
-                                            <div class="col">
-                                                <h5>{{ activeMatches[0].challenger }}</h5>
-                                            </div>
-                                            <div class="col-auto">
-                                                <span class="badge bg-primary">vs</span>
-                                            </div>
-                                            <div class="col">
-                                                <h5>{{ activeMatches[0].defender }}</h5>
-                                            </div>
-                                        </div>
-                                        <div class="row align-items-center">
-                                            <div class="col">
-                                                {% if activeMatches[0].challengerBonus and activeMatches[0].challengerBonus != 0 %}
-                                                    {% if activeMatches[0].challengerBonus > 0 %}
-                                                        <span class="badge bg-success p-1.5 fs-6">+
-                                                    {% elif activeMatches[0].challengerBonus < 0 %}
-                                                        <span class="badge bg-danger p-1.5 fs-6">
-                                                    {% endif %}
-                                                    {{ activeMatches[0].challengerBonus }}
-                                                    </span>
-                                                {% endif %}
-                                            </div>
-                                            <div class="col-auto">
-                                                <span></span>
-                                            </div>
-                                            <div class="col">
-                                                {% if activeMatches[0].defenderBonus and activeMatches[0].defenderBonus != 0 %}
-                                                    {% if activeMatches[0].defenderBonus > 0 %}
-                                                        <span class="badge bg-success p-1.5 fs-6">+
-                                                    {% elif activeMatches[0].defenderBonus < 0 %}
-                                                        <span class="badge bg-danger p-1.5 fs-6">
-                                                    {% endif %}
-                                                    {{ activeMatches[0].defenderBonus }}
-                                                    </span>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                        <p class="text-muted mb-2" data-start-timestamp="{{ activeMatches[0].timeStarted.timestamp() }}">
-                                            Since: {{ activeMatches[0].timeStarted.strftime('%H:%M') }}
-                                        </p>
-                                        <button type="button" class="btn btn-primary btn-sm" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#finishMatchModal"
-                                                data-match-id="{{ activeMatches[0].id }}"
-                                                data-challenger-name="{{ activeMatches[0].challenger }}"
-                                                data-defender-name="{{ activeMatches[0].defender }}"
-                                                data-challenger-id="{{ activeMatches[0].challengerId }}"
-                                                data-defender-id="{{ activeMatches[0].defenderId }}">
-                                            Finish Match
-                                        </button>
-                                    </div>
-                                </div>
-                                {% for match in activeMatches[1:] %}
-                                    <div class="carousel-item">
-                                        <div class="bg-light p-3 rounded text-center">
-                                            <div class="row align-items-center">
-                                                <div class="col">
-                                                    <h5>{{ match.challenger }}</h5>
-                                                </div>
-                                                <div class="col-auto">
-                                                    <span class="badge bg-primary">vs</span>
-                                                </div>
-                                                <div class="col">
-                                                    <h5>{{ match.defender }}</h5>
-                                                </div>
-                                            </div>
-                                            <div class="row align-items-center">
-                                                <div class="col">
-                                                    {% if match.challengerBonus and match.challengerBonus != 0 %}
-                                                        {% if match.challengerBonus > 0 %}
-                                                            <span class="badge bg-success p-1.5 fs-6">+
-                                                        {% elif match.challengerBonus < 0 %}
-                                                            <span class="badge bg-danger p-1.5 fs-6">
-                                                        {% endif %}
-                                                        {{ match.challengerBonus }}
-                                                        </span>
-                                                    {% endif %}
-                                                </div>
-                                                <div class="col-auto">
-                                                    <span></span>
-                                                </div>
-                                                <div class="col">
-                                                    {% if match.defenderBonus and match.defenderBonus != 0 %}
-                                                        {% if match.defenderBonus > 0 %}
-                                                            <span class="badge bg-success p-1.5 fs-6">+
-                                                        {% elif match.defenderBonus < 0 %}
-                                                            <span class="badge bg-danger p-1.5 fs-6">
-                                                        {% endif %}
-                                                        {{ match.defenderBonus }}
-                                                        </span>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                            <p class="text-muted mb-2" data-start-timestamp="{{ match.timeStarted.timestamp() }}">
-                                                Since: {{ match.timeStarted.strftime('%H:%M') }}
-                                            </p>
-                                            <button type="button" class="btn btn-primary btn-sm" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#finishMatchModal"
-                                                    data-match-id="{{ match.id }}"
-                                                    data-challenger-name="{{ match.challenger }}"
-                                                    data-defender-name="{{ match.defender }}"
-                                                    data-challenger-id="{{ match.challengerId }}"
-                                                    data-defender-id="{{ match.defenderId }}">
-                                                Finish Match
-                                            </button>
-                                        </div>
-                                    </div>
-                                {% endfor %}
+            <div class="d-flex align-items-center mb-3">
+                <h4 class="mb-0 me-2">Active Challenges</h4>
+                <hr class="flex-grow-1">
+                <button type="button" class="btn btn-outline-secondary btn-sm" 
+                    data-bs-toggle="offcanvas" 
+                    data-bs-target="#activeMatchesSettings" 
+                    aria-controls="activeMatchesSettings"
+                    data-bs-toggle="tooltip" 
+                    title="Settings"
+                    {% if ranking.ended == True %} disabled {% endif %}>
+                <span class="material-icons" style="font-size: 16px;">settings</span>
+                </button>
+            </div>
+            <div class="activeMatches">
+                {% if activeMatches %}
+                <div id="activeMatchesCarousel" class="carousel slide">
+                    <div class="carousel-inner">
+                    <div class="carousel-item active">
+                        <div class="bg-light p-3 rounded text-center">
+                        <div class="row align-items-center">
+                            <div class="col">
+                            <h5>{{ activeMatches[0].challenger }}</h5>
                             </div>
-                            {% if activeMatches|length > 1 %}
-                                <button class="carousel-control-prev" type="button" data-bs-target="#activeMatchesCarousel" data-bs-slide="prev">
-                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                                    <span class="visually-hidden">Previous</span>
-                                </button>
-                                <button class="carousel-control-next" type="button" data-bs-target="#activeMatchesCarousel" data-bs-slide="next">
-                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                                    <span class="visually-hidden">Next</span>
-                                </button>
+                            <div class="col-auto">
+                            <span class="badge bg-primary">vs</span>
+                            </div>
+                            <div class="col">
+                            <h5>{{ activeMatches[0].defender }}</h5>
+                            </div>
+                        </div>
+                        <div class="row align-items-center">
+                            <div class="col">
+                            {% if activeMatches[0].challengerBonus and activeMatches[0].challengerBonus != 0 %}
+                                {% if activeMatches[0].challengerBonus > 0 %}
+                                <span class="badge bg-success p-1.5 fs-6">+
+                                {% elif activeMatches[0].challengerBonus < 0 %}
+                                <span class="badge bg-danger p-1.5 fs-6">
+                                {% endif %}
+                                {{ activeMatches[0].challengerBonus }}
+                                </span>
                             {% endif %}
+                            </div>
+                            <div class="col-auto">
+                            <span></span>
+                            </div>
+                            <div class="col">
+                            {% if activeMatches[0].defenderBonus and activeMatches[0].defenderBonus != 0 %}
+                                {% if activeMatches[0].defenderBonus > 0 %}
+                                <span class="badge bg-success p-1.5 fs-6">+
+                                {% elif activeMatches[0].defenderBonus < 0 %}
+                                <span class="badge bg-danger p-1.5 fs-6">
+                                {% endif %}
+                                {{ activeMatches[0].defenderBonus }}
+                                </span>
+                            {% endif %}
+                            </div>
                         </div>
-                    {% else %}
-                        <div class="bg-light p-3 rounded text-center text-muted">
-                            <p class="mb-0">There are currently no active challenges.</p>
+                        <p class="text-muted mb-2" data-start-timestamp="{{ activeMatches[0].timeStarted.timestamp() }}">
+                            Since: {{ activeMatches[0].timeStarted.strftime('%H:%M') }}
+                        </p>
+                        <button type="button" class="btn btn-primary btn-sm" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#finishMatchModal"
+                            data-match-id="{{ activeMatches[0].id }}"
+                            data-challenger-name="{{ activeMatches[0].challenger }}"
+                            data-defender-name="{{ activeMatches[0].defender }}"
+                            data-challenger-id="{{ activeMatches[0].challengerId }}"
+                            data-defender-id="{{ activeMatches[0].defenderId }}"
+                            {% if ranking.ended == True %} disabled {% endif %}>
+                            Finish Match
+                        </button>
                         </div>
+                    </div>
+                    {% for match in activeMatches[1:] %}
+                        <div class="carousel-item">
+                        <div class="bg-light p-3 rounded text-center">
+                            <div class="row align-items-center">
+                            <div class="col">
+                                <h5>{{ match.challenger }}</h5>
+                            </div>
+                            <div class="col-auto">
+                                <span class="badge bg-primary">vs</span>
+                            </div>
+                            <div class="col">
+                                <h5>{{ match.defender }}</h5>
+                            </div>
+                            </div>
+                            <div class="row align-items-center">
+                            <div class="col">
+                                {% if match.challengerBonus and match.challengerBonus != 0 %}
+                                {% if match.challengerBonus > 0 %}
+                                    <span class="badge bg-success p-1.5 fs-6">+
+                                {% elif match.challengerBonus < 0 %}
+                                    <span class="badge bg-danger p-1.5 fs-6">
+                                {% endif %}
+                                {{ match.challengerBonus }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="col-auto">
+                                <span></span>
+                            </div>
+                            <div class="col">
+                                {% if match.defenderBonus and match.defenderBonus != 0 %}
+                                {% if match.defenderBonus > 0 %}
+                                    <span class="badge bg-success p-1.5 fs-6">+
+                                {% elif match.defenderBonus < 0 %}
+                                    <span class="badge bg-danger p-1.5 fs-6">
+                                {% endif %}
+                                {{ match.defenderBonus }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            </div>
+                            <p class="text-muted mb-2" data-start-timestamp="{{ match.timeStarted.timestamp() }}">
+                            Since: {{ match.timeStarted.strftime('%H:%M') }}
+                            </p>
+                            <button type="button" class="btn btn-primary btn-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#finishMatchModal"
+                                data-match-id="{{ match.id }}"
+                                data-challenger-name="{{ match.challenger }}"
+                                data-defender-name="{{ match.defender }}"
+                                data-challenger-id="{{ match.challengerId }}"
+                                data-defender-id="{{ match.defenderId }}"
+                                {% if ranking.ended == True %} disabled {% endif %}>
+                            Finish Match
+                            </button>
+                        </div>
+                        </div>
+                    {% endfor %}
+                    </div>
+                    {% if activeMatches|length > 1 %}
+                    <button class="carousel-control-prev" type="button" data-bs-target="#activeMatchesCarousel" data-bs-slide="prev" {% if ranking.ended == True %} disabled {% endif %}>
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#activeMatchesCarousel" data-bs-slide="next" {% if ranking.ended == True %} disabled {% endif %}>
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
                     {% endif %}
                 </div>
+                {% else %}
+                <div class="bg-light p-3 rounded text-center text-muted">
+                    <p class="mb-0">There are currently no active challenges.</p>
+                </div>
+                {% endif %}
+            </div>
             </div>
             
             <!-- Add Player Section -->
             <div class="mb-4">
-                <div class="d-flex align-items-center mb-3">
-                    <h4 class="mb-0 me-2">Add Player</h4>
-                    <hr class="flex-grow-1">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" 
-                            data-bs-toggle="offcanvas" 
-                            data-bs-target="#addPlayerOffcanvas" 
-                            aria-controls="addPlayerOffcanvas"
-                            data-bs-toggle="tooltip" 
-                            title="Add Player">
-                        <span class="material-icons" style="font-size: 16px;">add</span>
-                    </button>
-                </div>
+            <div class="d-flex align-items-center mb-3">
+                <h4 class="mb-0 me-2">Add Player</h4>
+                <hr class="flex-grow-1">
+                <button type="button" class="btn btn-outline-secondary btn-sm" 
+                    data-bs-toggle="offcanvas" 
+                    data-bs-target="#addPlayerOffcanvas" 
+                    aria-controls="addPlayerOffcanvas"
+                    data-bs-toggle="tooltip" 
+                    title="Add Player"
+                    {% if ranking.ended == True %} disabled {% endif %}>
+                <span class="material-icons" style="font-size: 16px;">add</span>
+                </button>
+            </div>
             </div>
         </div>
     </div>

@@ -314,6 +314,49 @@
         </div>
       </div>
     </div>
+
+    <!-- Ranking Maintenance Section -->
+    <div class="col-12 mt-4">
+      <div class="card shadow-sm border-info">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">
+            <i class="material-symbols-outlined me-2">build</i>
+            Ranking Maintenance
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-3">
+            Run maintenance tasks to ensure ranking integrity and fix common issues.
+          </p>
+
+          <div class="row g-2">
+            <div class="col-12">
+              <form method="POST" action="{{ url_for('fixRankingTrainer') }}" class="w-100">
+                <input type="hidden" name="rankingId" value="{{ rankingId }}" />
+                <button
+                  type="submit"
+                  class="btn btn-info w-100 d-flex align-items-center justify-content-center"
+                >
+                  <i class="material-symbols-outlined me-2">fact_check</i>
+                  Run Ranking Checkup
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <small class="text-muted">
+              <i class="material-symbols-outlined me-1" style="font-size: 16px">info</i>
+              <strong>Ranking Checkup:</strong> Automatically detects and fixes gaps in ranking positions, 
+              ensures proper ordering, and validates data integrity.
+              <br />
+              <i class="material-symbols-outlined me-1" style="font-size: 16px">tips_and_updates</i>
+              Run this if you notice missing or duplicate ranking positions, or after manual data changes.
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
     {% endif %}
     {% if rankings|length == 0 %}
     <div class="col-12">
@@ -352,17 +395,18 @@
     } else {
       dateInput.disabled = false;
       timeInput.disabled = false;
-      const today = new Date().toISOString().split("T")[0];
-      dateInput.min = today;
-      if (!dateInput.value) dateInput.value = today;
+      // Set minimum date to today in local timezone
+      const today = new Date();
+      const localDate = today.toISOString().split("T")[0];
+      dateInput.min = localDate;
+      
+      if (!dateInput.value) dateInput.value = localDate;
       if (!timeInput.value) timeInput.value = "18:00";
+      
       dateInput.classList.remove("text-muted");
       timeInput.classList.remove("text-muted");
       dateInput.style.backgroundColor = "";
       timeInput.style.backgroundColor = "";
-      // Optionally add back required attributes
-      // dateInput.setAttribute("required", "");
-      // timeInput.setAttribute("required", "");
     }
   }
 
