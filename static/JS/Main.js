@@ -913,16 +913,17 @@ function showToast(message, type = "primary") {
 
   // Create and show toast
   const toast = document.createElement("div");
-  toast.className = `toast align-items-center text-white bg-${type}`;
+  toast.className = `toast align-items-center text-white bg-${type} fs-5`;
   toast.setAttribute("role", "alert");
+  toast.style.minWidth = "350px";
   toast.innerHTML = `
     <div class="d-flex">
-      <div class="toast-body">${message}</div>
+      <div class="toast-body py-3 fs-6">${message}</div>
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
     </div>`;
 
   container.appendChild(toast);
-  const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+  const bsToast = new bootstrap.Toast(toast, { delay: 2000 });
   bsToast.show();
 
   toast.addEventListener("hidden.bs.toast", () => toast.remove());

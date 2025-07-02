@@ -99,6 +99,59 @@
       </div>
     </nav>
 
+    <!-- Toast container for flash messages -->
+    <div
+      class="toast-container position-fixed top-0 end-0 p-3"
+      style="z-index: 1055"
+    >
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div
+        class="toast fs-5"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        data-bs-autohide="true"
+        data-bs-delay="2000"
+        style="min-width: 350px"
+      >
+        <div class="toast-header py-3">
+          <span
+            class="material-symbols-outlined me-2 text-{% if category == 'error' %}danger{% elif category == 'success' %}success{% elif category == 'warning' %}warning{% else %}primary{% endif %}"
+            style="font-size: 24px"
+          >
+            {% if category == 'error' %}error{% elif category == 'success'
+            %}check_circle{% elif category == 'warning' %}warning{% else
+            %}info{% endif %}
+          </span>
+          <strong class="me-auto fs-5">
+            {% if category == 'error' %}Error{% elif category == 'success'
+            %}Success{% elif category == 'warning' %}Warning{% else %}Info{%
+            endif %}
+          </strong>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="toast"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="toast-body py-3 fs-6">{{ message }}</div>
+      </div>
+      {% endfor %} {% endif %} {% endwith %}
+    </div>
+
     <div class="container-fluid mt-3">{% block content %}{% endblock %}</div>
+
+    <!-- Initialize toasts -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var toastElList = [].slice.call(document.querySelectorAll(".toast"));
+        var toastList = toastElList.map(function (toastEl) {
+          return new bootstrap.Toast(toastEl);
+        });
+        toastList.forEach((toast) => toast.show());
+      });
+    </script>
   </body>
 </html>

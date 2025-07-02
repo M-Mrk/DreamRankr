@@ -74,7 +74,41 @@
 
 /* Toast container positioning */
 .toast-container {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    padding: 1rem !important;
     z-index: 1055;
+}
+
+/* Enhanced toast styles */
+.toast {
+    min-width: 350px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toast-header {
+    padding: 1rem !important;
+}
+
+.toast-body {
+    padding: 1rem !important;
+    font-size: 1.1rem;
+}
+
+/* Mobile responsive toasts */
+@media (max-width: 576px) {
+    .toast {
+        min-width: 300px !important;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .toast-container {
+        left: 1rem !important;
+        right: 1rem !important;
+        padding: 0.5rem !important;
+    }
 }
 
 /* Dark carousel arrows */

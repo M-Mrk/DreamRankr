@@ -78,6 +78,7 @@ def login():
         password = request.form.get('password')
         print(password)
         if authenticate(password, request):
+            flash(f"Logged in as {session['permissionLevel']}", "success")
             return redirect('/')
         else:
             return redirect('/login')
@@ -85,6 +86,7 @@ def login():
 @app.route('/logout')
 def logOut():
     session.clear()
+    flash(f"Logged out", "success")
     return redirect('/login')
 
 @app.route('/')
@@ -108,6 +110,7 @@ def home():
         return render_template('index.html', rankings=rankings, allPlayers=allPlayers)
     except Exception as e:
         log(4, "home", f"Error loading rankings for home page: {e}")
+        flash("Can not show the rankings at the moment", "error")
         # Return empty rankings list as fallback
         return render_template('index.html', rankings=[], allPlayers=[])
 
@@ -134,6 +137,7 @@ def view(rankingId):
         return render_template('viewer.html', players=players, ranking=db.session.get(Rankings, rankingId))
     except Exception as e:
         log(4, "view", f"Error loading players for ranking {rankingId}: {e}")
+        flash("Can not show the players at the moment", "error")
         # Return empty players list as fallback
         return render_template('viewer.html', players=[], ranking=[])
 
@@ -184,6 +188,7 @@ def trainer(rankingId):
                              
     except Exception as e:
         log(4, "trainer", f"Error loading trainer page for ranking {rankingId}: {e}")
+        flash("Can not show the players at the moment", "error")
         # Return minimal template with empty data as fallback
         return render_template('trainer.html', 
                              players=[], 
@@ -211,11 +216,13 @@ def startListTrainer():
             typeOfTournament == ""
 
         startList(listName, description, startingPlayers, isTournament, typeOfTournament)
+        flash("Started Ranking/Tournament", "success")
         return redirect('/')
     
 @app.route('/deleteLogs')
 def deleteLogs():
     clearLogs()
+    flash("Cleared Logs", "success")
     return redirect('/')
 
 @app.route('/trainer/end', methods=['POST'])
@@ -225,10 +232,13 @@ def endListTrainer():
     endOrDelete = request.form.get('endOrDelete')
     if endOrDelete == "delete":
         deleteList(rankingId)
+        flash("Deleted Ranking/Tournament", "success")
     elif endOrDelete == "end":
         endList(rankingId)
+        flash("Ended Ranking/Tournament", "success")
     else:
         log(4, "/trainer/end", f"Could not determin if user wanted to stop or end list({rankingId}): {endOrDelete}")
+        flash("Could not end or stop the ranking", "warning")
     return redirect('/')
 
 @app.route('/trainer/settings', methods=['GET', 'POST'])
@@ -277,6 +287,7 @@ def settingsTrainer():
                         return redirect('/trainer/settings')
                 
                 db.session.commit()
+                flash("Saved settings", "success")
         
         return redirect('/trainer/settings')
     else:
@@ -293,7 +304,7 @@ def settingsTrainer():
         # Convert UTC times to local timezone for display
         currentRankingWithLocalTime = None
         if currentRanking and currentRanking.endsOn:
-            # Create a copy of the ranking object with local time
+            # Create a copy of the ranking object with local time. May find better way
             import copy
             currentRankingWithLocalTime = copy.copy(currentRanking)
             currentRankingWithLocalTime.endsOn = convert_utc_to_local(currentRanking.endsOn)
@@ -310,6 +321,7 @@ def settingsTrainer():
         )
     except Exception as e:
         log(4, "settingsTrainer", f"Error loading rankings for home page: {e}")
+        flash("Can not show the rankings at the moment", "error")
         return render_template('settingsTrainer.html', rankings=[], allPlayers=[])
 
 @app.route('/trainer/fix', methods=['POST'])
@@ -317,6 +329,7 @@ def settingsTrainer():
 def fixRankingTrainer():
     rankingId = request.form.get('rankingId')
     checkRankingAndFix(rankingId)
+    flash("Performed maintenance", "success")
     return redirect('/trainer/settings')
 
 @app.route('/trainer/start_match', methods=['POST'])
@@ -362,11 +375,13 @@ def start_match():
         # Start the match
         startMatch(challengerId, defenderId, rankingId)
         log(1, "start_match", f"Started match in ranking {rankingId} between challenger {challengerId} and defender {defenderId}")
-        
+
     except ValueError as e:
         log(4, "start_match", f"Invalid parameter values: {e}")
+        flash("Input is invalid", "warning")
     except Exception as e:
         log(4, "start_match", f"Could not start match: {e}")
+        flash("Could not start match", "error")
     
     return redirect(f'/trainer/{rankingId}')
 
@@ -401,6 +416,7 @@ def finish_match():
         # Validate required parameters
         if not rankingId or not matchId:
             log(3, "finish_match", f"Missing required parameters - rankingId: {rankingId}, matchId: {matchId}")
+            flash("Missing required parameters", "error")
             return redirect('/trainer/1')  # Fallback to default ranking
             
         rankingId = int(rankingId)
@@ -415,6 +431,7 @@ def finish_match():
         # Validate that either winner is specified or scores are provided
         if not winnerId and (challengerScore is None or defenderScore is None):
             log(3, "finish_match", f"Either winner_id or both scores must be provided for match {matchId}")
+            flash("Either winner or both scores must be provided", "error")
             return redirect(f'/trainer/{rankingId}')
         
         # Finish the match
@@ -423,8 +440,10 @@ def finish_match():
        
     except ValueError as e:
         log(4, "finish_match", f"Invalid parameter values: {e}")
+        flash("Invalid parameter values", "error")
     except Exception as e:
         log(4, "finish_match", f"Could not finish match {matchId}: {e}")
+        flash("Could not finish match", "error")
     
     return redirect(f'/trainer/{rankingId}')
 
@@ -455,12 +474,14 @@ def player_add():
         
         # Validate required parameters
         if not rankingId:
+            flash("Ranking ID is missing", "error")
             log(3, "player_add", "Missing rankingId parameter")
             return redirect('/trainer/1')  # Fallback to default ranking
             
         rankingId = int(rankingId)
         
         if not name or name.strip() == "":
+            flash("Player name is missing or empty", "error")
             log(3, "player_add", f"Name is missing or empty for ranking {rankingId}")
             return redirect(f'/trainer/{rankingId}')
         
@@ -474,13 +495,16 @@ def player_add():
         
         # Create the new player
         newPlayer(name, rankingId, bonus, logicOperator, limitRanking)
+        flash(f"Added new player '{name}' to ranking", "success")
         log(1, "player_add", f"Added new player {name} to ranking {rankingId}")
         
     except ValueError as e:
         db.session.rollback()
+        flash("Invalid input values for new player", "error")
         log(4, "player_add", f"Invalid parameter values for new player: {e}")
     except Exception as e:
         db.session.rollback()
+        flash(f"Could not add new player due to an error", "error")
         log(4, "player_add", f"New player: {name} couldn't be added, because of {e}")
     
     return redirect(f'/trainer/{rankingId}')
@@ -509,12 +533,14 @@ def player_import():
         
         # Validate required parameters
         if not rankingId:
+            flash("Ranking ID is missing", "error")
             log(3, "player_import", "Missing rankingId parameter")
             return redirect('/trainer/1')  # Fallback to default ranking
             
         rankingId = int(rankingId)
         
         if not importPlayerId:
+            flash("Player ID to import is missing", "error")
             log(3, "player_import", f"Missing import_player_id for ranking {rankingId}")
             return redirect(f'/trainer/{rankingId}')
             
@@ -522,11 +548,14 @@ def player_import():
         
         # Import the player
         addPlayerToRanking(importPlayerId, rankingId)
+        flash(f"Successfully imported player to ranking", "success")
         log(1, "player_import", f"Imported player {importPlayerId} to ranking {rankingId}")
         
     except ValueError as e:
+        flash("Invalid input values for player import", "error")
         log(4, "player_import", f"Invalid parameter values for player import: {e}")
     except Exception as e:
+        flash("Could not import player due to an error", "error")
         log(4, "player_import", f"Could not import player {importPlayerId} to ranking {rankingId}: {e}")
     
     return redirect(f'/trainer/{rankingId}')
@@ -564,12 +593,14 @@ def player_edit():
         
         # Validate required parameters
         if not rankingId:
+            flash("Ranking ID is missing", "error")
             log(3, "player_edit", "Missing rankingId parameter")
             return redirect('/trainer/1')  # Fallback to default ranking
             
         rankingId = int(rankingId)
         
         if not playerId:
+            flash("Player ID is missing", "error")
             log(3, "player_edit", f"Could not edit player because the submitted Id was empty")
             return redirect(f'/trainer/{rankingId}')
         
@@ -578,6 +609,7 @@ def player_edit():
         # Get the player object
         player = db.session.get(Players, playerId)
         if not player:
+            flash("Player not found", "error")
             log(3, "player_edit", f"Player with ID {playerId} not found")
             return redirect(f'/trainer/{rankingId}')
     
@@ -590,8 +622,10 @@ def player_edit():
                 
                 if player_ranking_entry and player_ranking_entry.ranking != new_ranking:
                     updatePlayerRanking(playerId, rankingId, new_ranking)
+                    flash(f"Updated ranking for player {player.name} to {new_ranking}", "success")
                     log(1, "player_edit", f"Updated ranking for player {player.name} to {new_ranking}")
             except ValueError as e:
+                flash("Invalid ranking value", "error")
                 log(3, "player_edit", f"Invalid ranking value: {new_ranking}")
         
         # Handle player attribute updates
@@ -603,6 +637,7 @@ def player_edit():
             ("setsLost", "sets_lost")
         ]
         updatePlayerAttributes(player, attribute_mappings, request)
+        flash(f"Updated attributes for player {player.name}", "success")
         
         # Handle bonus update/creation
         bonus = request.form.get('bonus')
@@ -612,15 +647,20 @@ def player_edit():
         if validateBonusParameters(bonus, logicOperator, limitRanking):
             success = updateOrCreatePlayerBonus(playerId, bonus, logicOperator, limitRanking)
             if success:
+                flash(f"Updated bonus for player {player.name}", "success")
                 log(1, "player_edit", f"Updated bonus for player {player.name}")
             else:
+                flash(f"Failed to update bonus for player {player.name}", "error")
                 log(3, "player_edit", f"Failed to update bonus for player {player.name}")
         
+        flash(f"Successfully edited player {player.name}", "success")
         log(1, "player_edit", f"Successfully edited player {player.name} (ID: {playerId})")
         
     except ValueError as e:
+        flash("Invalid input values", "error")
         log(4, "player_edit", f"Invalid parameter values for player edit: {e}")
     except Exception as e:
+        flash("Could not edit player due to an error", "error")
         log(4, "player_edit", f"Could not edit player {playerId}: {e}")
     
     return redirect(f'/trainer/{rankingId}')
@@ -649,12 +689,14 @@ def player_remove():
         
         # Validate required parameters
         if not rankingId:
+            flash("Ranking ID is missing", "error")
             log(3, "player_remove", "Missing rankingId parameter")
             return redirect('/trainer/1')  # Fallback to default ranking
             
         rankingId = int(rankingId)
         
         if not playerId:
+            flash("Player ID is missing", "error")
             log(3, "player_remove", f"Could not remove player because the submitted Id was empty")
             return redirect(f'/trainer/{rankingId}')
             
@@ -662,11 +704,14 @@ def player_remove():
         
         # Remove the player from the ranking
         removePlayerFromRanking(playerId, rankingId)
+        flash(f"Successfully removed player {playerId} from ranking {rankingId}", "success")
         log(1, "player_remove", f"Removed Player {playerId} from Ranking with Id:{rankingId}")
         
     except ValueError as e:
+        flash("Invalid input values for player removal", "error")
         log(4, "player_remove", f"Invalid parameter values for player removal: {e}")
     except Exception as e:
+        flash("Could not remove player due to an error", "error")
         log(4, "player_remove", f"Could not remove Player {playerId} from Ranking {rankingId}: {e}")
     
     return redirect(f'/trainer/{rankingId}')
@@ -695,12 +740,14 @@ def player_delete():
         
         # Validate required parameters
         if not rankingId:
+            flash("Ranking ID is missing", "error")
             log(3, "player_delete", "Missing rankingId parameter")
             return redirect('/trainer/1')  # Fallback to default ranking
             
         rankingId = int(rankingId)
         
         if not playerId:
+            flash("Player ID is missing", "error")
             log(3, "player_delete", f"Could not delete player because the submitted Id was empty")
             return redirect(f'/trainer/{rankingId}')
             
@@ -708,11 +755,14 @@ def player_delete():
         
         # Delete the player entirely
         deletePlayer(playerId)
+        flash(f"Successfully deleted player {playerId}", "success")
         log(1, "player_delete", f"Deleted Player {playerId}")
         
     except ValueError as e:
+        flash("Invalid input values for player deletion", "error")
         log(4, "player_delete", f"Invalid parameter values for player deletion: {e}")
     except Exception as e:
+        flash("Could not delete player due to an error", "error")
         log(4, "player_delete", f"Could not delete Player {playerId}: {e}")
     
     return redirect(f'/trainer/{rankingId}')
