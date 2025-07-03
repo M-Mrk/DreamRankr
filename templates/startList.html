@@ -45,124 +45,274 @@
                     placeholder="Optional description"
                   />
                 </div>
-              </div>
-            </div>
 
-            <!-- Player Selection Section -->
-            <div class="mb-3">
-              <div
-                class="d-flex justify-content-between align-items-center mb-3"
-              >
-                <h5 class="text-primary mb-0">
-                  <span class="material-symbols-outlined me-2">group</span>
-                  Select Players
-                </h5>
-                <small class="text-muted"
-                  >Optional - you can add players later</small
-                >
-              </div>
-
-              <!-- Search Bar -->
-              <div class="mb-3">
-                <div class="input-group">
-                  <span class="input-group-text">
-                    <span class="material-symbols-outlined">search</span>
-                  </span>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="playerSearch"
-                    placeholder="Search players by name..."
-                  />
+                <!-- Ranking System Selection -->
+                <div class="col-md-6">
+                  <label for="sortedBy" class="form-label">
+                    <span class="material-symbols-outlined me-1">sort</span>
+                    Ranking System
+                  </label>
+                  <select class="form-select" id="sortedBy" name="sortedBy">
+                    <option value="standard" selected>
+                      Switch Ranking (standard)
+                    </option>
+                    <option value="points">Points Based</option>
+                  </select>
+                  <div class="form-text">
+                    <small class="text-muted">
+                      Standard: Players switch positions based on match results.
+                      Points: Players are ranked by accumulated points.
+                    </small>
+                  </div>
                 </div>
-              </div>
 
-              <!-- Select All/None Controls -->
-              <div class="mb-3">
-                <div class="btn-group btn-group-sm" role="group">
-                  <button
-                    type="button"
-                    class="btn btn-outline-primary"
-                    id="selectAllBtn"
-                  >
-                    <span class="material-symbols-outlined me-1"
-                      >select_all</span
-                    >
-                    Select All
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-outline-secondary"
-                    id="selectNoneBtn"
-                  >
-                    <span class="material-symbols-outlined me-1">deselect</span>
-                    Select None
-                  </button>
-                </div>
-                <div class="float-end">
-                  <small class="text-muted">
-                    <span id="selectedCount">0</span> players selected
-                  </small>
-                </div>
-                <div class="clearfix"></div>
-              </div>
-
-              <!-- Players List -->
-              <div
-                class="border rounded p-3 bg-light"
-                style="max-height: 400px; overflow-y: auto"
-              >
-                {% if allPlayers and allPlayers|length > 0 %}
-                <div class="row g-2" id="playersContainer">
-                  {% for player in allPlayers %}
-                  <div
-                    class="col-6 col-md-4 col-lg-3 col-xl-2 player-item"
-                    data-player-name="{{ player.name.lower() }}"
-                  >
-                    <div class="form-check">
-                      <input
-                        class="form-check-input player-checkbox"
-                        type="checkbox"
-                        value="{{ player.id }}"
-                        id="player{{ player.id }}"
-                        name="startingPlayers"
-                      />
-                      <label
-                        class="form-check-label w-100"
-                        for="player{{ player.id }}"
+                <!-- Player Selection Section - Collapsible -->
+                <div class="col-12">
+                  <div class="card border-secondary">
+                    <div class="card-header bg-light">
+                      <button
+                        class="btn btn-link text-decoration-none p-0 w-100 text-start"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#playerSelectionCollapse"
+                        aria-expanded="false"
+                        aria-controls="playerSelectionCollapse"
                       >
                         <div
                           class="d-flex justify-content-between align-items-center"
                         >
-                          <span class="fw-bold">{{ player.name }}</span>
-                          <small class="text-muted">
-                            {{ player.wins }}W - {{ player.losses }}L
-                          </small>
+                          <h6 class="text-primary mb-0">
+                            <span class="material-symbols-outlined me-2"
+                              >group</span
+                            >
+                            Select Players
+                          </h6>
+                          <div class="d-flex align-items-center">
+                            <small class="text-muted me-2"
+                              >Optional - you can add players later</small
+                            >
+                            <span
+                              class="material-symbols-outlined text-primary"
+                              id="playersIcon"
+                              >expand_more</span
+                            >
+                          </div>
                         </div>
-                        <small class="text-muted">
-                          {% if player.wins and (player.wins + player.losses) >
-                          0 %} {{ "%.1f"|format((player.wins / (player.wins +
-                          player.losses) * 100)) }}% win rate {% else %} No
-                          matches played {% endif %}
-                        </small>
-                      </label>
+                      </button>
+                    </div>
+                    <div class="collapse" id="playerSelectionCollapse">
+                      <div class="card-body">
+                        <!-- Search Bar -->
+                        <div class="mb-3">
+                          <div class="input-group">
+                            <span class="input-group-text">
+                              <span class="material-symbols-outlined"
+                                >search</span
+                              >
+                            </span>
+                            <input
+                              type="text"
+                              class="form-control"
+                              id="playerSearch"
+                              placeholder="Search players by name..."
+                            />
+                          </div>
+                        </div>
+
+                        <!-- Select All/None Controls -->
+                        <div class="mb-3">
+                          <div class="btn-group btn-group-sm" role="group">
+                            <button
+                              type="button"
+                              class="btn btn-outline-primary"
+                              id="selectAllBtn"
+                            >
+                              <span class="material-symbols-outlined me-1"
+                                >select_all</span
+                              >
+                              Select All
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-outline-secondary"
+                              id="selectNoneBtn"
+                            >
+                              <span class="material-symbols-outlined me-1"
+                                >deselect</span
+                              >
+                              Select None
+                            </button>
+                          </div>
+                          <div class="float-end">
+                            <small class="text-muted">
+                              <span id="selectedCount">0</span> players selected
+                            </small>
+                          </div>
+                          <div class="clearfix"></div>
+                        </div>
+
+                        <!-- Players List -->
+                        <div
+                          class="border rounded p-3 bg-light"
+                          style="max-height: 400px; overflow-y: auto"
+                        >
+                          {% if allPlayers and allPlayers|length > 0 %}
+                          <div class="row g-2" id="playersContainer">
+                            {% for player in allPlayers %}
+                            <div
+                              class="col-6 col-md-4 col-lg-3 col-xl-2 player-item"
+                              data-player-name="{{ player.name.lower() }}"
+                            >
+                              <div class="form-check">
+                                <input
+                                  class="form-check-input player-checkbox"
+                                  type="checkbox"
+                                  value="{{ player.id }}"
+                                  id="player{{ player.id }}"
+                                  name="startingPlayers"
+                                />
+                                <label
+                                  class="form-check-label w-100"
+                                  for="player{{ player.id }}"
+                                >
+                                  <div
+                                    class="d-flex justify-content-between align-items-center"
+                                  >
+                                    <span class="fw-bold"
+                                      >{{ player.name }}</span
+                                    >
+                                    <small class="text-muted">
+                                      {{ player.wins }}W - {{ player.losses }}L
+                                    </small>
+                                  </div>
+                                  <small class="text-muted">
+                                    {% if player.wins and (player.wins +
+                                    player.losses) > 0 %} {{
+                                    "%.1f"|format((player.wins / (player.wins +
+                                    player.losses) * 100)) }}% win rate {% else
+                                    %} No matches played {% endif %}
+                                  </small>
+                                </label>
+                              </div>
+                            </div>
+                            {% endfor %}
+                          </div>
+                          {% else %}
+                          <div class="text-center text-muted py-4">
+                            <span
+                              class="material-symbols-outlined d-block mb-2"
+                              style="font-size: 3rem"
+                              >group_off</span
+                            >
+                            <p class="mb-0">No players available yet</p>
+                            <small
+                              >You can create players after creating this
+                              ranking</small
+                            >
+                          </div>
+                          {% endif %}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  {% endfor %}
                 </div>
-                {% else %}
-                <div class="text-center text-muted py-4">
-                  <span
-                    class="material-symbols-outlined d-block mb-2"
-                    style="font-size: 3rem"
-                    >group_off</span
-                  >
-                  <p class="mb-0">No players available yet</p>
-                  <small
-                    >You can create players after creating this ranking</small
-                  >
+
+                <!-- Auto-End Settings - Collapsible -->
+                <div class="col-12">
+                  <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                      <button
+                        class="btn btn-link text-white text-decoration-none p-0 w-100 text-start"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#autoEndCollapse"
+                        aria-expanded="false"
+                        aria-controls="autoEndCollapse"
+                      >
+                        <div
+                          class="d-flex justify-content-between align-items-center"
+                        >
+                          <h6 class="text-white mb-0">
+                            <span class="material-symbols-outlined me-2"
+                              >schedule</span
+                            >
+                            Auto-End Ranking
+                          </h6>
+                          <div class="d-flex align-items-center">
+                            <small class="text-white me-2">Optional</small>
+                            <span
+                              class="material-symbols-outlined"
+                              id="autoEndIcon"
+                              >expand_more</span
+                            >
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                    <div class="collapse" id="autoEndCollapse">
+                      <div class="card-body">
+                        <div class="form-check mb-3">
+                          <input
+                            class="form-check-input"
+                            type="checkbox"
+                            id="disableAutoEnd"
+                            name="disableAutoEnd"
+                            checked
+                          />
+                          <label class="form-check-label" for="disableAutoEnd">
+                            <span class="material-symbols-outlined me-1"
+                              >cancel</span
+                            >
+                            Disable automatic ending (run indefinitely)
+                          </label>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                          <div class="col-md-6">
+                            <label for="endsOnDate" class="form-label">
+                              <span class="material-symbols-outlined me-1"
+                                >calendar_today</span
+                              >
+                              End Date
+                            </label>
+                            <input
+                              type="date"
+                              class="form-control"
+                              id="endsOnDate"
+                              name="endsOnDate"
+                            />
+                          </div>
+                          <div class="col-md-6">
+                            <label for="endsOnTime" class="form-label">
+                              <span class="material-symbols-outlined me-1"
+                                >access_time</span
+                              >
+                              End Time
+                            </label>
+                            <input
+                              type="time"
+                              class="form-control"
+                              id="endsOnTime"
+                              name="endsOnTime"
+                              value="18:00"
+                            />
+                          </div>
+                        </div>
+
+                        <div class="mt-2">
+                          <small class="text-muted">
+                            <span class="material-symbols-outlined me-1"
+                              >info</span
+                            >
+                            Set a date and time to automatically end the
+                            ranking. Check "Disable automatic ending" to run the
+                            ranking indefinitely.
+                          </small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                {% endif %}
               </div>
             </div>
 
@@ -191,13 +341,94 @@
 </div>
 
 <script>
+  function toggleDateTimeInputs() {
+    const disableCheckbox = document.getElementById("disableAutoEnd");
+    const dateInput = document.getElementById("endsOnDate");
+    const timeInput = document.getElementById("endsOnTime");
+
+    if (!disableCheckbox || !dateInput || !timeInput) {
+      console.warn(
+        "One or more elements not found: disableAutoEnd, endsOnDate, endsOnTime"
+      );
+      return;
+    }
+
+    if (disableCheckbox.checked) {
+      dateInput.disabled = true;
+      timeInput.disabled = true;
+      dateInput.value = "";
+      timeInput.value = "";
+      dateInput.classList.add("text-muted");
+      timeInput.classList.add("text-muted");
+      dateInput.style.backgroundColor = "#f8f9fa";
+      timeInput.style.backgroundColor = "#f8f9fa";
+      dateInput.removeAttribute("required");
+      timeInput.removeAttribute("required");
+    } else {
+      dateInput.disabled = false;
+      timeInput.disabled = false;
+      // Set minimum date to today in local timezone
+      const today = new Date();
+      const localDate = today.toISOString().split("T")[0];
+      dateInput.min = localDate;
+
+      if (!dateInput.value) dateInput.value = localDate;
+      if (!timeInput.value) timeInput.value = "18:00";
+
+      dateInput.classList.remove("text-muted");
+      timeInput.classList.remove("text-muted");
+      dateInput.style.backgroundColor = "";
+      timeInput.style.backgroundColor = "";
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
+    // Initialize existing functionality
     const playerSearch = document.getElementById("playerSearch");
     const selectAllBtn = document.getElementById("selectAllBtn");
     const selectNoneBtn = document.getElementById("selectNoneBtn");
     const selectedCount = document.getElementById("selectedCount");
     const playerCheckboxes = document.querySelectorAll(".player-checkbox");
     const playerItems = document.querySelectorAll(".player-item");
+
+    // Initialize collapse icon toggles
+    const autoEndCollapse = document.getElementById("autoEndCollapse");
+    const autoEndIcon = document.getElementById("autoEndIcon");
+    const playerSelectionCollapse = document.getElementById(
+      "playerSelectionCollapse"
+    );
+    const playersIcon = document.getElementById("playersIcon");
+
+    // Handle auto-end collapse icon changes
+    if (autoEndCollapse && autoEndIcon) {
+      autoEndCollapse.addEventListener("show.bs.collapse", function () {
+        autoEndIcon.textContent = "expand_less";
+      });
+      autoEndCollapse.addEventListener("hide.bs.collapse", function () {
+        autoEndIcon.textContent = "expand_more";
+      });
+    }
+
+    // Handle player selection collapse icon changes
+    if (playerSelectionCollapse && playersIcon) {
+      playerSelectionCollapse.addEventListener("show.bs.collapse", function () {
+        playersIcon.textContent = "expand_less";
+      });
+      playerSelectionCollapse.addEventListener("hide.bs.collapse", function () {
+        playersIcon.textContent = "expand_more";
+      });
+    }
+
+    // Initialize date/time toggle functionality
+    try {
+      toggleDateTimeInputs();
+      const disableCheckbox = document.getElementById("disableAutoEnd");
+      if (disableCheckbox) {
+        disableCheckbox.addEventListener("change", toggleDateTimeInputs);
+      }
+    } catch (error) {
+      console.error("Error initializing date/time inputs:", error);
+    }
 
     // Search functionality
     if (playerSearch) {

@@ -4,6 +4,7 @@ from bonuses import getBonus
 from logger import log
 import datetime as dt
 from functools import wraps
+from flask import flash
 
 class RankingObj:
     def __init__(self, ranking=None, points=None, lastRanking=None, lastRankingChanged=None):
@@ -71,8 +72,11 @@ def getPlayersOfRanking(rankingId):
             
         if ranking.sortedBy == "points":
             order_column = PlayerRankings.points.desc()  # Descending for points
-        else:  # Default to standard ranking
+        elif ranking.sortedBy == "standard":
             order_column = PlayerRankings.ranking.asc()  # Ascending for ranking
+        else:
+            log(4, "getPlayersOfRanking", f"Invalid sorting option '{ranking.sortedBy}' for ranking {rankingId}")
+            return []
 
         players = db.session.query(Players).join(
             PlayerRankings, Players.id == PlayerRankings.playerId
@@ -465,33 +469,89 @@ def updatePlayerAttributes(player, attribute_mappings, request):
         current_value = getattr(player, db_attr)
         checkIfChangedAndUpdate(form_field, player, current_value, db_attr, request)
 
-def startList(name, description, startingPlayers, isTournament, typeOfTournament):
+def startList(name, description, startingPlayers, isTournament, typeOfTournament, sortedBy, endsOn):
+    """
+    Creates a new ranking list with optional tournament settings and starting players.
+    
+    Args:
+        name: Name of the ranking list.
+        description: Description of the ranking list.
+        startingPlayers: List of player IDs to add to the ranking.
+        isTournament: Boolean indicating if the ranking is a tournament.
+        typeOfTournament: Type of tournament (if applicable).
+        sortedBy: Sorting method for the ranking.
+        endsOn: End date for the ranking (datetime object or ISO format string).
+    """
     log(1, "startList", f"Starting to create new list: {name}")
+    
+    if not name:
+        log(3, "startList", "No name provided for the ranking list")
+        flash("Ranking list name is required.", 'error')
+        return False
+    
     if Rankings.query.filter_by(name=name).first():
         log(3, "startList", f"List name: '{name}' is already used")
-        return
+        flash(f"Ranking list name '{name}' is already in use. Please choose a different name.", 'error')
+        return False
+    
     try:
         if not isTournament:
             isTournament = False
-            typeOfTournament = ""
+            typeOfTournament = None
+
+        if validateSortingOption(sortedBy) == False:
+            sortedBy = "ranking"
+            flash("Defined sorting setting is invalid. Falling back to the standard. You can change the sorting in the settings.", 'error')
+            log(2, "startList", f"Invalid sorting option '{sortedBy}' provided. Defaulting to 'ranking'.")
+
+        # Ensure endsOn is a valid datetime object
+        if endsOn and not isinstance(endsOn, dt.datetime):
+            if isinstance(endsOn, str):
+                try:
+                    endsOn = dt.datetime.fromisoformat(endsOn)
+                    log(1, "startList", f"Converted string datetime to datetime object for endsOn")
+                except ValueError as e:
+                    log(3, "startList", f"Invalid datetime format provided for endsOn: {e}")
+                    flash("Invalid end date format provided. Please use a valid ISO format string.", 'error')
+                    return False
+            else:
+                log(3, "startList", f"Invalid endsOn type provided. Expected datetime or string, got {type(endsOn)}")
+                flash("Invalid end date type provided. Please use a valid datetime object or ISO format string.", 'error')
+                return False
+
+        # Ensure endsOn is timezone-aware
+        if endsOn and endsOn.tzinfo is None:
+            log(2, "startList", "End date is timezone-naive. Assuming UTC.")
+            endsOn = endsOn.replace(tzinfo=dt.timezone.utc)
 
         new_Ranking = Rankings(
             name=name,
             description=description,
             tournament=isTournament,
             typeTournament=typeOfTournament,
-            ended = False
+            endsOn=endsOn,
+            ended=False,
+            sortedBy=sortedBy
         )
         db.session.add(new_Ranking)
+        
         if startingPlayers:
-            db.session.flush()
+            db.session.flush()  # Flush to get the new ranking ID
             for player in startingPlayers:
-                addPlayerToRanking(player, new_Ranking.id)
+                try:
+                    addPlayerToRanking(player, new_Ranking.id)
+                except Exception as e:
+                    log(4, "startList", f"Failed to add player {player} to ranking {new_Ranking.id}: {e}")
+                    flash(f"Failed to add player with ID {player} to the ranking list.", 'error')
+
         db.session.commit()
         log(1, "startList", f"Successfully created new List: {name}")
+        return True
     except Exception as e:
         db.session.rollback()
-        log(4, "startList", f"Could not create List, because of {e}")
+        log(4, "startList", f"Could not create List '{name}', because of {e}")
+        flash(f"An error occurred while creating the ranking list '{name}'. Please try again.", 'error')
+        return False
 
 def endList(rankingId):
     log(1, "endList", f"Starting to end ranking {rankingId}")
@@ -585,21 +645,16 @@ def changeSortingRanking(rankingId, setting):
             log(3, "changeSortingRanking", f"Ranking with ID {rankingId} does not exist")
             return False
             
-        options = ["standard", "points"]
         changed = False
 
-        if setting not in options:
-            log(3, "changeSortingRanking", f"Invalid sorting option '{setting}' for ranking {rankingId}. Valid options: {options}")
+        if validateSortingOption(setting) == False:
+            log(3, "changeSortingRanking", f"Invalid sorting option '{setting}' for ranking {rankingId}.")
             return False
+        else:
+            ranking.sortedBy = validateSortingOption(setting)
 
         old_setting = getattr(ranking, 'sortedBy', None)
         
-        for option in options:
-            if setting == option:
-                ranking.sortedBy = option
-                changed = True
-                break
-
         if changed:
             db.session.commit()
             log(1, "changeSortingRanking", f"Successfully changed sorting for ranking {rankingId} from '{old_setting}' to '{setting}'")
@@ -704,3 +759,11 @@ def checkBeforeRendering(f):
 
 def checkRankingAndFix(rankingId):
     checkForGapInRanking(rankingId)
+
+def validateSortingOption(str):
+    OPTIONS = ["standard", "points"]
+    output = False
+    for option in OPTIONS:
+        if str == option:
+            output = str
+    return output

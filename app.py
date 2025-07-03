@@ -208,6 +208,9 @@ def startListTrainer():
         startingPlayers = request.form.getlist('startingPlayers')
         isTournament = request.form.get('isTournament')
         typeOfTournament = request.form.get('typeOfTournament')
+        sortedBy = request.form.get('sortedBy')
+        endsOnDate = request.form.get('endsOnDate')
+        endsOnTime = request.form.get('endsOnTime')
         if isTournament and typeOfTournament:
             #Do something
             print("")
@@ -215,7 +218,25 @@ def startListTrainer():
             isTournament == False
             typeOfTournament == ""
 
-        startList(listName, description, startingPlayers, isTournament, typeOfTournament)
+        if endsOnDate and endsOnTime:
+            try:
+                # Combine date and time into datetime with proper timezone handling
+                datetime_str = f"{endsOnDate} {endsOnTime}"
+                end_datetime = dt.datetime.fromisoformat(datetime_str)
+                
+                # Convert from local timezone to UTC using the configured timezone
+                end_datetime_utc = convert_local_to_utc(end_datetime)
+                
+                # Validate that end date is in the future
+                if end_datetime_utc <= dt.datetime.now(dt.timezone.utc):
+                    end_datetime_utc = None
+                    flash("End date must be in the future. Could not set ending time and date. Set later in settings", "error")
+            except ValueError as e:
+                end_datetime_utc = None
+                log(3, "startListTrainer", f"Invalid date/time format provided: {e}")
+                flash("Invalid date/time format. Could not set ending time and date. Set later in settings", "error")
+
+        startList(listName, description, startingPlayers, isTournament, typeOfTournament, sortedBy, end_datetime_utc)
         flash("Started Ranking/Tournament", "success")
         return redirect('/')
     
