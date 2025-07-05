@@ -1,496 +1,601 @@
-{% extends "base.html" %}
-
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <div class="container-fluid px-3 mt-3">
-    <h1 class="mb-4 text-center">Currently Active Rankings</h1>
-    
-    <!-- Rankings Cards - Mobile Optimized -->
-    <div class="row g-3">
-        {% for ranking in rankings %}
-        <div class="col-12 col-sm-6 col-lg-4">
-            <div class="card h-100 shadow-sm {% if ranking.ended %}border-secondary{% endif %}">
-                <div class="card-body d-flex flex-column">
-                    <div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0 {% if ranking.ended %}text-muted{% endif %}">
-                                {{ ranking.name }}
-                                {% if ranking.ended %}
-                                    <span class="material-symbols-outlined text-danger ms-2" style="font-size: 1rem;" title="Tournament Ended">
-                                        event_busy
-                                    </span>
-                                {% endif %}
-                            </h5>
-                            {% if session['permissionLevel'] == "trainer" %}
-                                <form method="POST" action="{{ url_for('settingsTrainer') }}" class="d-inline">
-                                    <input type="hidden" name="rankingId" value="{{ ranking.id }}">
-                                    <button type="submit" class="btn btn-link p-0 text-muted" title="Settings">
-                                        <span class="material-symbols-outlined" style="font-size: 0.9rem;">settings</span>
-                                    </button>
-                                </form>
-                            {% endif %}
-                        </div>
-                        {% if ranking.ended %}
-                            <div class="mt-2">
-                                <span class="badge bg-secondary">
-                                    <span class="material-symbols-outlined" style="font-size: 0.8rem;">flag</span>
-                                    Ended
-                                </span>
-                            </div>
-                        {% endif %}
-                    </div>
-                    <p class="card-text flex-grow-1 {% if ranking.ended %}text-muted{% endif %}">
-                        {% if ranking.description %}
-                            {{ ranking.description }}
-                        {% else %}
-                            No description available.
-                        {% endif %}
-                    </p>
-                    {% if session['permissionLevel'] == "trainer" %}
-                        <a href="{{ url_for('trainer', rankingId=ranking.id) }}" class="btn {% if ranking.ended %}btn-secondary{% else %}btn-primary{% endif %} mt-auto">
-                            {% if ranking.ended %}
-                                View Final Results
-                            {% else %}
-                                View Ranking
-                            {% endif %}
-                        </a>
-                    {% else %}
-                        <a href="{{ url_for('view', rankingId=ranking.id) }}" class="btn {% if ranking.ended %}btn-secondary{% else %}btn-primary{% endif %} mt-auto">
-                            {% if ranking.ended %}
-                                View Final Results
-                            {% else %}
-                                View Ranking
-                            {% endif %}
-                        </a>
-                    {% endif %}
-                </div>
+  <h1 class="mb-4 text-center">Currently Active Rankings</h1>
+
+  <!-- Rankings Cards - Mobile Optimized -->
+  <div class="row g-3">
+    {% for ranking in rankings %}
+    <div class="col-12 col-sm-6 col-lg-4">
+      <div
+        class="card h-100 shadow-sm {% if ranking.ended %}border-secondary{% endif %}"
+      >
+        <div class="card-body d-flex flex-column">
+          <div>
+            <div class="d-flex justify-content-between align-items-center">
+              <h5
+                class="card-title mb-0 {% if ranking.ended %}text-muted{% endif %}"
+              >
+                {{ ranking.name }} {% if ranking.ended %}
+                <span
+                  class="material-symbols-outlined text-danger ms-2"
+                  style="font-size: 1rem"
+                  title="Tournament Ended"
+                >
+                  event_busy
+                </span>
+                {% endif %}
+              </h5>
+              {% if session['permissionLevel'] == "trainer" %}
+              <form
+                method="POST"
+                action="{{ url_for('settingsTrainer') }}"
+                class="d-inline"
+              >
+                <input
+                  type="hidden"
+                  name="rankingId"
+                  value="{{ ranking.id }}"
+                />
+                <button
+                  type="submit"
+                  class="btn btn-link p-0 text-muted"
+                  title="Settings"
+                >
+                  <span
+                    class="material-symbols-outlined"
+                    style="font-size: 0.9rem"
+                    >settings</span
+                  >
+                </button>
+              </form>
+              {% endif %}
             </div>
+            {% if ranking.ended %}
+            <div class="mt-2">
+              <span class="badge bg-secondary">
+                <span
+                  class="material-symbols-outlined"
+                  style="font-size: 0.8rem"
+                  >flag</span
+                >
+                Ended
+              </span>
+            </div>
+            {% elif ranking.endsOn %} {% set days_left = ((ranking.endsOn -
+            now()).total_seconds() / 86400) | int %} {% if days_left >= 0 %}
+            <div class="mt-2">
+              <span class="badge bg-warning text-dark">
+                <span
+                  class="material-symbols-outlined me-1"
+                  style="font-size: 0.8rem"
+                  >schedule</span
+                >
+                {% if days_left == 0 %} Ends today {% elif days_left == 1 %} {{
+                days_left }} day left {% else %} {{ days_left }} days left {%
+                endif %}
+              </span>
+            </div>
+            {% endif %} {% endif %}
+          </div>
+          <p
+            class="card-text flex-grow-1 {% if ranking.ended %}text-muted{% endif %}"
+          >
+            {% if ranking.description %} {{ ranking.description }} {% else %} No
+            description available. {% endif %}
+          </p>
+          {% if session['permissionLevel'] == "trainer" %}
+          <a
+            href="{{ url_for('trainer', rankingId=ranking.id) }}"
+            class="btn {% if ranking.ended %}btn-secondary{% else %}btn-primary{% endif %} mt-auto"
+          >
+            {% if ranking.ended %} View Final Results {% else %} View Ranking {%
+            endif %}
+          </a>
+          {% else %}
+          <a
+            href="{{ url_for('view', rankingId=ranking.id) }}"
+            class="btn {% if ranking.ended %}btn-secondary{% else %}btn-primary{% endif %} mt-auto"
+          >
+            {% if ranking.ended %} View Final Results {% else %} View Ranking {%
+            endif %}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% if rankings|length == 0 %}
+  <div class="alert alert-info">No rankings available.</div>
+  {% endif %}
+
+  <!-- Horizontal Separator with All Players Section -->
+  <div class="mt-4">
+    <div class="text-center pt-5">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+          <h4 class="mb-1">All Players</h4>
+          <h6 class="text-muted mb-0">lifetime stats</h6>
+        </div>
+        <div class="flex-grow-1 mx-4">
+          <hr class="border-secondary" />
+        </div>
+        <div class="d-none d-md-block">
+          <div class="btn-group" role="group" aria-label="Sort options">
+            <button
+              type="button"
+              class="btn btn-outline-primary active btn-sm"
+              id="sortWins"
+              onclick="sortPlayers('wins')"
+            >
+              Sort by Wins
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-primary btn-sm"
+              id="sortWinRate"
+              onclick="sortPlayers('winRate')"
+            >
+              Sort by Win %
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-primary btn-sm"
+              id="sortSets"
+              onclick="sortPlayers('sets')"
+            >
+              Sort by Sets Won
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile sorting buttons -->
+      <div class="d-md-none mb-4">
+        <div
+          class="btn-group-vertical w-100"
+          role="group"
+          aria-label="Sort options"
+        >
+          <button
+            type="button"
+            class="btn btn-outline-primary active"
+            id="sortWinsMobile"
+            onclick="sortPlayers('wins')"
+          >
+            <span class="material-symbols-outlined">trophy</span>
+            <span> Sort by Wins</span>
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-primary"
+            id="sortWinRateMobile"
+            onclick="sortPlayers('winRate')"
+          >
+            <span class="material-symbols-outlined">bar_chart</span> Sort by Win
+            %
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-primary"
+            id="sortSetsMobile"
+            onclick="sortPlayers('sets')"
+          >
+            <span class="material-symbols-outlined">scoreboard</span>
+            Sort by Sets Won
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {% if allPlayers and allPlayers|length > 0 %}
+    <!-- Mobile Podium for Top 3 Players -->
+    {% if allPlayers|length >= 3 %}
+    <div class="podium-container mb-4" id="podiumContainer">
+      <!-- Mobile Podium (Vertical Stack) -->
+      <div class="d-md-none">
+        <div class="row g-2">
+          <!-- First Place -->
+          <div class="col-12">
+            <div class="card border-warning bg-warning bg-opacity-10">
+              <div class="card-body text-center py-3">
+                <h5 class="mb-2">🥇 1st Place</h5>
+                <h4 class="text-warning mb-2" id="player1NameMobile">
+                  {{ allPlayers[0].name }}
+                </h4>
+                <div class="row text-center">
+                  <div class="col-4">
+                    <small class="text-muted d-block">Wins</small>
+                    <strong id="player1WinsMobile"
+                      >{{ allPlayers[0].wins }}</strong
+                    >
+                  </div>
+                  <div class="col-4">
+                    <small class="text-muted d-block">Sets</small>
+                    <strong id="player1SetsMobile"
+                      >{{ allPlayers[0].setsWon }}</strong
+                    >
+                  </div>
+                  <div class="col-4">
+                    <small class="text-muted d-block">Win %</small>
+                    <strong id="player1WinRateMobile">
+                      {% if allPlayers[0].wins and (allPlayers[0].wins +
+                      allPlayers[0].losses) > 0 %} {{
+                      "%.1f"|format((allPlayers[0].wins / (allPlayers[0].wins +
+                      allPlayers[0].losses) * 100)) }}% {% else %} N/A {% endif
+                      %}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Second and Third Place -->
+          <div class="col-6">
+            <div class="card border-primary bg-primary bg-opacity-10">
+              <div class="card-body text-center py-2">
+                <h6 class="mb-1">🥈 2nd</h6>
+                <p class="mb-1 fw-bold" id="player2NameMobile">
+                  {{ allPlayers[1].name }}
+                </p>
+                <small class="text-muted d-block"
+                  >Wins:
+                  <span id="player2WinsMobile"
+                    >{{ allPlayers[1].wins }}</span
+                  ></small
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <div class="card border-danger bg-danger bg-opacity-10">
+              <div class="card-body text-center py-2">
+                <h6 class="mb-1">🥉 3rd</h6>
+                <p class="mb-1 fw-bold" id="player3NameMobile">
+                  {{ allPlayers[2].name }}
+                </p>
+                <small class="text-muted d-block"
+                  >Wins:
+                  <span id="player3WinsMobile"
+                    >{{ allPlayers[2].wins }}</span
+                  ></small
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop Podium (Original) -->
+      <div class="d-none d-md-block">
+        <div class="row justify-content-center align-items-end">
+          <!-- Second Place -->
+          <div class="col-md-3 text-center">
+            <div class="podium-position podium-second d-flex flex-column">
+              <div class="podium-player">
+                <h5 class="mb-1">🥈 2nd Place</h5>
+                <h4 class="text-primary" id="player2Name">
+                  {{ allPlayers[1].name }}
+                </h4>
+                <p class="mb-1">
+                  <strong id="player2Wins">{{ allPlayers[1].wins }}</strong>
+                  wins
+                </p>
+                <p class="mb-0" id="player2WinRate">
+                  {% if allPlayers[1].wins and (allPlayers[1].wins +
+                  allPlayers[1].losses) > 0 %} {{
+                  "%.1f"|format((allPlayers[1].wins / (allPlayers[1].wins +
+                  allPlayers[1].losses) * 100)) }}% win rate {% else %} N/A win
+                  rate {% endif %}
+                </p>
+              </div>
+              <div class="podium-base podium-base-second mt-auto">2</div>
+            </div>
+          </div>
+
+          <!-- First Place -->
+          <div class="col-md-3 text-center">
+            <div class="podium-position podium-first d-flex flex-column">
+              <div class="podium-player">
+                <h5 class="mb-1">🥇 1st Place</h5>
+                <h4 class="text-warning" id="player1Name">
+                  {{ allPlayers[0].name }}
+                </h4>
+                <p class="mb-1">
+                  <strong id="player1Wins">{{ allPlayers[0].wins }}</strong>
+                  wins
+                </p>
+                <p class="mb-0" id="player1WinRate">
+                  {% if allPlayers[0].wins and (allPlayers[0].wins +
+                  allPlayers[0].losses) > 0 %} {{
+                  "%.1f"|format((allPlayers[0].wins / (allPlayers[0].wins +
+                  allPlayers[0].losses) * 100)) }}% win rate {% else %} N/A win
+                  rate {% endif %}
+                </p>
+              </div>
+              <div class="podium-base podium-base-first mt-auto">1</div>
+            </div>
+          </div>
+
+          <!-- Third Place -->
+          <div class="col-md-3 text-center">
+            <div class="podium-position podium-third d-flex flex-column">
+              <div class="podium-player">
+                <h5 class="mb-1">🥉 3rd Place</h5>
+                <h4 class="text-danger" id="player3Name">
+                  {{ allPlayers[2].name }}
+                </h4>
+                <p class="mb-1">
+                  <strong id="player3Wins">{{ allPlayers[2].wins }}</strong>
+                  wins
+                </p>
+                <p class="mb-0" id="player3WinRate">
+                  {% if allPlayers[2].wins and (allPlayers[2].wins +
+                  allPlayers[2].losses) > 0 %} {{
+                  "%.1f"|format((allPlayers[2].wins / (allPlayers[2].wins +
+                  allPlayers[2].losses) * 100)) }}% win rate {% else %} N/A win
+                  rate {% endif %}
+                </p>
+              </div>
+              <div class="podium-base podium-base-third mt-auto">3</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Mobile Player Cards (replaces table on mobile) -->
+    <div class="d-block d-md-none" id="mobilePlayersList">
+      <div class="row g-2" id="mobilePlayersContainer">
+        {% for player in allPlayers %}
+        <div class="col-12">
+          <div class="card {% if loop.index <= 3 %}border-warning{% endif %}">
+            <div class="card-body py-3">
+              <div class="row align-items-center">
+                <div class="col-2 text-center">
+                  <span class="fs-4">
+                    {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {%
+                    elif loop.index == 3 %}🥉 {% else %}{{ loop.index }} {%
+                    endif %}
+                  </span>
+                </div>
+                <div class="col-6">
+                  <h6 class="mb-1">{{ player.name }}</h6>
+                  <small class="text-muted">
+                    {% if player.wins and (player.wins + player.losses) > 0 %}
+                    {{ "%.1f"|format((player.wins / (player.wins +
+                    player.losses) * 100)) }}% win rate {% else %} N/A win rate
+                    {% endif %}
+                  </small>
+                </div>
+                <div class="col-4 text-end">
+                  <div class="small">
+                    <div>
+                      <strong>{{ player.wins }}</strong>W -
+                      <strong>{{ player.losses }}</strong>L
+                    </div>
+                    <div class="text-muted">
+                      Sets: {{ player.setsWon }}-{{ player.setsLost }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         {% endfor %}
+      </div>
     </div>
-    {% if rankings|length == 0 %}
-        <div class="alert alert-info">No rankings available.</div>
+
+    <!-- Desktop Table (hidden on mobile) -->
+    <div class="table-responsive d-none d-md-block">
+      <table class="table table-striped table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Wins</th>
+            <th>Losses</th>
+            <th>Win %</th>
+            <th>Sets Won</th>
+            <th>Sets Lost</th>
+          </tr>
+        </thead>
+        <tbody id="playersTableBody">
+          {% for player in allPlayers %}
+          <tr {% if loop.index <="3" %}class="table-warning" {% endif %}>
+            <td>
+              {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
+              loop.index == 3 %}🥉 {% else %}{{ loop.index }} {% endif %}
+            </td>
+            <td><strong>{{ player.name }}</strong></td>
+            <td>{{ player.wins }}</td>
+            <td>{{ player.losses }}</td>
+            <td>
+              {% if player.wins and (player.wins + player.losses) > 0 %} {{
+              "%.1f"|format((player.wins / (player.wins + player.losses) * 100))
+              }}% {% else %} N/A {% endif %}
+            </td>
+            <td>{{ player.setsWon }}</td>
+            <td>{{ player.setsLost }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center">
+      <h5 class="mb-2">Waiting for players to sign up</h5>
+      <p class="mb-0">No players have registered yet. Check back later!</p>
+    </div>
     {% endif %}
-    
-    <!-- Horizontal Separator with All Players Section -->
-    <div class="mt-4">
-        <div class="text-center pt-5">
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <div>
-                    <h4 class="mb-1">All Players</h4>
-                    <h6 class="text-muted mb-0">lifetime stats</h6>
-                </div>
-                <div class="flex-grow-1 mx-4">
-                    <hr class="border-secondary">
-                </div>
-                <div class="d-none d-md-block">
-                    <div class="btn-group" role="group" aria-label="Sort options">
-                        <button type="button" class="btn btn-outline-primary active btn-sm" id="sortWins" onclick="sortPlayers('wins')">
-                            Sort by Wins
-                        </button>
-                        <button type="button" class="btn btn-outline-primary btn-sm" id="sortWinRate" onclick="sortPlayers('winRate')">
-                            Sort by Win %
-                        </button>
-                        <button type="button" class="btn btn-outline-primary btn-sm" id="sortSets" onclick="sortPlayers('sets')">
-                            Sort by Sets Won
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <!-- Mobile sorting buttons -->
-            <div class="d-md-none mb-4">
-                <div class="btn-group-vertical w-100" role="group" aria-label="Sort options">
-                    <button type="button" class="btn btn-outline-primary active" id="sortWinsMobile" onclick="sortPlayers('wins')">
-                        <span class="material-symbols-outlined">trophy</span>
-                        <span> Sort by Wins</span>
-                    </button>
-                    <button type="button" class="btn btn-outline-primary" id="sortWinRateMobile" onclick="sortPlayers('winRate')">
-                        <span class="material-symbols-outlined">bar_chart</span> Sort by Win %
-                    </button>
-                    <button type="button" class="btn btn-outline-primary" id="sortSetsMobile" onclick="sortPlayers('sets')">
-                        <span class="material-symbols-outlined">scoreboard</span>
-                            Sort by Sets Won
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        {% if allPlayers and allPlayers|length > 0 %}
-            <!-- Mobile Podium for Top 3 Players -->
-            {% if allPlayers|length >= 3 %}
-            <div class="podium-container mb-4" id="podiumContainer">
-                <!-- Mobile Podium (Vertical Stack) -->
-                <div class="d-md-none">
-                    <div class="row g-2">
-                        <!-- First Place -->
-                        <div class="col-12">
-                            <div class="card border-warning bg-warning bg-opacity-10">
-                                <div class="card-body text-center py-3">
-                                    <h5 class="mb-2">🥇 1st Place</h5>
-                                    <h4 class="text-warning mb-2" id="player1NameMobile">{{ allPlayers[0].name }}</h4>
-                                    <div class="row text-center">
-                                        <div class="col-4">
-                                            <small class="text-muted d-block">Wins</small>
-                                            <strong id="player1WinsMobile">{{ allPlayers[0].wins }}</strong>
-                                        </div>
-                                        <div class="col-4">
-                                            <small class="text-muted d-block">Sets</small>
-                                            <strong id="player1SetsMobile">{{ allPlayers[0].setsWon }}</strong>
-                                        </div>
-                                        <div class="col-4">
-                                            <small class="text-muted d-block">Win %</small>
-                                            <strong id="player1WinRateMobile">
-                                                {% if allPlayers[0].wins and (allPlayers[0].wins + allPlayers[0].losses) > 0 %}
-                                                    {{ "%.1f"|format((allPlayers[0].wins / (allPlayers[0].wins + allPlayers[0].losses) * 100)) }}%
-                                                {% else %}
-                                                    N/A
-                                                {% endif %}
-                                            </strong>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Second and Third Place -->
-                        <div class="col-6">
-                            <div class="card border-primary bg-primary bg-opacity-10">
-                                <div class="card-body text-center py-2">
-                                    <h6 class="mb-1">🥈 2nd</h6>
-                                    <p class="mb-1 fw-bold" id="player2NameMobile">{{ allPlayers[1].name }}</p>
-                                    <small class="text-muted d-block">Wins: <span id="player2WinsMobile">{{ allPlayers[1].wins }}</span></small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-6">
-                            <div class="card border-danger bg-danger bg-opacity-10">
-                                <div class="card-body text-center py-2">
-                                    <h6 class="mb-1">🥉 3rd</h6>
-                                    <p class="mb-1 fw-bold" id="player3NameMobile">{{ allPlayers[2].name }}</p>
-                                    <small class="text-muted d-block">Wins: <span id="player3WinsMobile">{{ allPlayers[2].wins }}</span></small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Desktop Podium (Original) -->
-                <div class="d-none d-md-block">
-                    <div class="row justify-content-center align-items-end">
-                        <!-- Second Place -->
-                        <div class="col-md-3 text-center">
-                            <div class="podium-position podium-second d-flex flex-column">
-                                <div class="podium-player">
-                                    <h5 class="mb-1">🥈 2nd Place</h5>
-                                    <h4 class="text-primary" id="player2Name">{{ allPlayers[1].name }}</h4>
-                                    <p class="mb-1"><strong id="player2Wins">{{ allPlayers[1].wins }}</strong> wins</p>
-                                    <p class="mb-0" id="player2WinRate">
-                                        {% if allPlayers[1].wins and (allPlayers[1].wins + allPlayers[1].losses) > 0 %}
-                                            {{ "%.1f"|format((allPlayers[1].wins / (allPlayers[1].wins + allPlayers[1].losses) * 100)) }}% win rate
-                                        {% else %}
-                                            N/A win rate
-                                        {% endif %}
-                                    </p>
-                                </div>
-                                <div class="podium-base podium-base-second mt-auto">2</div>
-                            </div>
-                        </div>
-                        
-                        <!-- First Place -->
-                        <div class="col-md-3 text-center">
-                            <div class="podium-position podium-first d-flex flex-column">
-                                <div class="podium-player">
-                                    <h5 class="mb-1">🥇 1st Place</h5>
-                                    <h4 class="text-warning" id="player1Name">{{ allPlayers[0].name }}</h4>
-                                    <p class="mb-1"><strong id="player1Wins">{{ allPlayers[0].wins }}</strong> wins</p>
-                                    <p class="mb-0" id="player1WinRate">
-                                        {% if allPlayers[0].wins and (allPlayers[0].wins + allPlayers[0].losses) > 0 %}
-                                            {{ "%.1f"|format((allPlayers[0].wins / (allPlayers[0].wins + allPlayers[0].losses) * 100)) }}% win rate
-                                        {% else %}
-                                            N/A win rate
-                                        {% endif %}
-                                    </p>
-                                </div>
-                                <div class="podium-base podium-base-first mt-auto">1</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Third Place -->
-                        <div class="col-md-3 text-center">
-                            <div class="podium-position podium-third d-flex flex-column">
-                                <div class="podium-player">
-                                    <h5 class="mb-1">🥉 3rd Place</h5>
-                                    <h4 class="text-danger" id="player3Name">{{ allPlayers[2].name }}</h4>
-                                    <p class="mb-1"><strong id="player3Wins">{{ allPlayers[2].wins }}</strong> wins</p>
-                                    <p class="mb-0" id="player3WinRate">
-                                        {% if allPlayers[2].wins and (allPlayers[2].wins + allPlayers[2].losses) > 0 %}
-                                            {{ "%.1f"|format((allPlayers[2].wins / (allPlayers[2].wins + allPlayers[2].losses) * 100)) }}% win rate
-                                        {% else %}
-                                            N/A win rate
-                                        {% endif %}
-                                    </p>
-                                </div>
-                                <div class="podium-base podium-base-third mt-auto">3</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            
-            <!-- Mobile Player Cards (replaces table on mobile) -->
-            <div class="d-block d-md-none" id="mobilePlayersList">
-                <div class="row g-2" id="mobilePlayersContainer">
-                    {% for player in allPlayers %}
-                    <div class="col-12">
-                        <div class="card {% if loop.index <= 3 %}border-warning{% endif %}">
-                            <div class="card-body py-3">
-                                <div class="row align-items-center">
-                                    <div class="col-2 text-center">
-                                        <span class="fs-4">
-                                            {% if loop.index == 1 %}🥇
-                                            {% elif loop.index == 2 %}🥈
-                                            {% elif loop.index == 3 %}🥉
-                                            {% else %}{{ loop.index }}
-                                            {% endif %}
-                                        </span>
-                                    </div>
-                                    <div class="col-6">
-                                        <h6 class="mb-1">{{ player.name }}</h6>
-                                        <small class="text-muted">
-                                            {% if player.wins and (player.wins + player.losses) > 0 %}
-                                                {{ "%.1f"|format((player.wins / (player.wins + player.losses) * 100)) }}% win rate
-                                            {% else %}
-                                                N/A win rate
-                                            {% endif %}
-                                        </small>
-                                    </div>
-                                    <div class="col-4 text-end">
-                                        <div class="small">
-                                            <div><strong>{{ player.wins }}</strong>W - <strong>{{ player.losses }}</strong>L</div>
-                                            <div class="text-muted">Sets: {{ player.setsWon }}-{{ player.setsLost }}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- Desktop Table (hidden on mobile) -->
-            <div class="table-responsive d-none d-md-block">
-                <table class="table table-striped table-hover">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Rank</th>
-                            <th>Player</th>
-                            <th>Wins</th>
-                            <th>Losses</th>
-                            <th>Win %</th>
-                            <th>Sets Won</th>
-                            <th>Sets Lost</th>
-                        </tr>
-                    </thead>
-                    <tbody id="playersTableBody">
-                        {% for player in allPlayers %}
-                        <tr {% if loop.index <= 3 %}class="table-warning"{% endif %}>
-                            <td>
-                                {% if loop.index == 1 %}🥇
-                                {% elif loop.index == 2 %}🥈
-                                {% elif loop.index == 3 %}🥉
-                                {% else %}{{ loop.index }}
-                                {% endif %}
-                            </td>
-                            <td><strong>{{ player.name }}</strong></td>
-                            <td>{{ player.wins }}</td>
-                            <td>{{ player.losses }}</td>
-                            <td>
-                                {% if player.wins and (player.wins + player.losses) > 0 %}
-                                    {{ "%.1f"|format((player.wins / (player.wins + player.losses) * 100)) }}%
-                                {% else %}
-                                    N/A
-                                {% endif %}
-                            </td>
-                            <td>{{ player.setsWon }}</td>
-                            <td>{{ player.setsLost }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="alert alert-info text-center">
-                <h5 class="mb-2">Waiting for players to sign up</h5>
-                <p class="mb-0">No players have registered yet. Check back later!</p>
-            </div>
-        {% endif %}
-    </div>
+  </div>
 </div>
 
 <script>
-// Store original player data
-const playersData = [
-    {% for player in allPlayers %}
-    {
-        name: {{ player.name|tojson }},
-        wins: {{ player.wins or 0 }},
-        losses: {{ player.losses or 0 }},
-        setsWon: {{ player.setsWon or 0 }},
-        setsLost: {{ player.setsLost or 0 }},
-        winRate: {% if player.wins and (player.wins + player.losses) > 0 %}{{ (player.wins / (player.wins + player.losses) * 100) }}{% else %}0{% endif %}
-    }{% if not loop.last %},{% endif %}
-    {% endfor %}
-];
+  // Store original player data
+  const playersData = [
+      {% for player in allPlayers %}
+      {
+          name: {{ player.name|tojson }},
+          wins: {{ player.wins or 0 }},
+          losses: {{ player.losses or 0 }},
+          setsWon: {{ player.setsWon or 0 }},
+          setsLost: {{ player.setsLost or 0 }},
+          winRate: {% if player.wins and (player.wins + player.losses) > 0 %}{{ (player.wins / (player.wins + player.losses) * 100) }}{% else %}0{% endif %}
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+  ];
 
-function sortPlayers(sortBy) {
-    // Remove active class from all buttons (both mobile and desktop)
-    document.querySelectorAll('.btn-group .btn, .btn-group-vertical .btn').forEach(btn => btn.classList.remove('active'));
-    
-    // Add active class to clicked button
-    if (sortBy === 'wins') {
-        document.getElementById('sortWins')?.classList.add('active');
-        document.getElementById('sortWinsMobile')?.classList.add('active');
-    } else if (sortBy === 'winRate') {
-        document.getElementById('sortWinRate')?.classList.add('active');
-        document.getElementById('sortWinRateMobile')?.classList.add('active');
-    } else if (sortBy === 'sets') {
-        document.getElementById('sortSets')?.classList.add('active');
-        document.getElementById('sortSetsMobile')?.classList.add('active');
-    }
+  function sortPlayers(sortBy) {
+      // Remove active class from all buttons (both mobile and desktop)
+      document.querySelectorAll('.btn-group .btn, .btn-group-vertical .btn').forEach(btn => btn.classList.remove('active'));
 
-    // Sort the data
-    let sortedPlayers = [...playersData];
-    
-    if (sortBy === 'wins') {
-        sortedPlayers.sort((a, b) => b.wins - a.wins);
-    } else if (sortBy === 'winRate') {
-        sortedPlayers.sort((a, b) => b.winRate - a.winRate);
-    } else if (sortBy === 'sets') {
-        sortedPlayers.sort((a, b) => b.setsWon - a.setsWon);
-    }
+      // Add active class to clicked button
+      if (sortBy === 'wins') {
+          document.getElementById('sortWins')?.classList.add('active');
+          document.getElementById('sortWinsMobile')?.classList.add('active');
+      } else if (sortBy === 'winRate') {
+          document.getElementById('sortWinRate')?.classList.add('active');
+          document.getElementById('sortWinRateMobile')?.classList.add('active');
+      } else if (sortBy === 'sets') {
+          document.getElementById('sortSets')?.classList.add('active');
+          document.getElementById('sortSetsMobile')?.classList.add('active');
+      }
 
-    // Update podium if there are at least 3 players
-    if (sortedPlayers.length >= 3) {
-        updatePodium(sortedPlayers);
-        updateMobilePodium(sortedPlayers);
-    }
+      // Sort the data
+      let sortedPlayers = [...playersData];
 
-    // Update both table and mobile cards
-    updateTable(sortedPlayers);
-    updateMobileCards(sortedPlayers);
-}
+      if (sortBy === 'wins') {
+          sortedPlayers.sort((a, b) => b.wins - a.wins);
+      } else if (sortBy === 'winRate') {
+          sortedPlayers.sort((a, b) => b.winRate - a.winRate);
+      } else if (sortBy === 'sets') {
+          sortedPlayers.sort((a, b) => b.setsWon - a.setsWon);
+      }
 
-function updatePodium(players) {
-    // Update desktop podium
-    document.getElementById('player1Name').textContent = players[0].name;
-    document.getElementById('player1Wins').textContent = players[0].wins;
-    document.getElementById('player1WinRate').textContent = players[0].winRate > 0 ? 
-        players[0].winRate.toFixed(1) + '% win rate' : 'N/A win rate';
+      // Update podium if there are at least 3 players
+      if (sortedPlayers.length >= 3) {
+          updatePodium(sortedPlayers);
+          updateMobilePodium(sortedPlayers);
+      }
 
-    document.getElementById('player2Name').textContent = players[1].name;
-    document.getElementById('player2Wins').textContent = players[1].wins;
-    document.getElementById('player2WinRate').textContent = players[1].winRate > 0 ? 
-        players[1].winRate.toFixed(1) + '% win rate' : 'N/A win rate';
+      // Update both table and mobile cards
+      updateTable(sortedPlayers);
+      updateMobileCards(sortedPlayers);
+  }
 
-    document.getElementById('player3Name').textContent = players[2].name;
-    document.getElementById('player3Wins').textContent = players[2].wins;
-    document.getElementById('player3WinRate').textContent = players[2].winRate > 0 ? 
-        players[2].winRate.toFixed(1) + '% win rate' : 'N/A win rate';
-}
+  function updatePodium(players) {
+      // Update desktop podium
+      document.getElementById('player1Name').textContent = players[0].name;
+      document.getElementById('player1Wins').textContent = players[0].wins;
+      document.getElementById('player1WinRate').textContent = players[0].winRate > 0 ?
+          players[0].winRate.toFixed(1) + '% win rate' : 'N/A win rate';
 
-function updateMobilePodium(players) {
-    // Update mobile podium
-    document.getElementById('player1NameMobile').textContent = players[0].name;
-    document.getElementById('player1WinsMobile').textContent = players[0].wins;
-    document.getElementById('player1SetsMobile').textContent = players[0].setsWon;
-    document.getElementById('player1WinRateMobile').textContent = players[0].winRate > 0 ? 
-        players[0].winRate.toFixed(1) + '%' : 'N/A';
+      document.getElementById('player2Name').textContent = players[1].name;
+      document.getElementById('player2Wins').textContent = players[1].wins;
+      document.getElementById('player2WinRate').textContent = players[1].winRate > 0 ?
+          players[1].winRate.toFixed(1) + '% win rate' : 'N/A win rate';
 
-    document.getElementById('player2NameMobile').textContent = players[1].name;
-    document.getElementById('player2WinsMobile').textContent = players[1].wins;
+      document.getElementById('player3Name').textContent = players[2].name;
+      document.getElementById('player3Wins').textContent = players[2].wins;
+      document.getElementById('player3WinRate').textContent = players[2].winRate > 0 ?
+          players[2].winRate.toFixed(1) + '% win rate' : 'N/A win rate';
+  }
 
-    document.getElementById('player3NameMobile').textContent = players[2].name;
-    document.getElementById('player3WinsMobile').textContent = players[2].wins;
-}
+  function updateMobilePodium(players) {
+      // Update mobile podium
+      document.getElementById('player1NameMobile').textContent = players[0].name;
+      document.getElementById('player1WinsMobile').textContent = players[0].wins;
+      document.getElementById('player1SetsMobile').textContent = players[0].setsWon;
+      document.getElementById('player1WinRateMobile').textContent = players[0].winRate > 0 ?
+          players[0].winRate.toFixed(1) + '%' : 'N/A';
 
-function updateTable(players) {
-    const tbody = document.getElementById('playersTableBody');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
+      document.getElementById('player2NameMobile').textContent = players[1].name;
+      document.getElementById('player2WinsMobile').textContent = players[1].wins;
 
-    players.forEach((player, index) => {
-        const row = document.createElement('tr');
-        if (index < 3) {
-            row.className = 'table-warning';
-        }
+      document.getElementById('player3NameMobile').textContent = players[2].name;
+      document.getElementById('player3WinsMobile').textContent = players[2].wins;
+  }
 
-        let rankIcon;
-        if (index === 0) rankIcon = '🥇';
-        else if (index === 1) rankIcon = '🥈';
-        else if (index === 2) rankIcon = '🥉';
-        else rankIcon = index + 1;
+  function updateTable(players) {
+      const tbody = document.getElementById('playersTableBody');
+      if (!tbody) return;
 
-        const winRateDisplay = player.winRate > 0 ? player.winRate.toFixed(1) + '%' : 'N/A';
+      tbody.innerHTML = '';
 
-        row.innerHTML = `
-            <td>${rankIcon}</td>
-            <td><strong>${player.name}</strong></td>
-            <td>${player.wins}</td>
-            <td>${player.losses}</td>
-            <td>${winRateDisplay}</td>
-            <td>${player.setsWon}</td>
-            <td>${player.setsLost}</td>
-        `;
+      players.forEach((player, index) => {
+          const row = document.createElement('tr');
+          if (index < 3) {
+              row.className = 'table-warning';
+          }
 
-        tbody.appendChild(row);
-    });
-}
+          let rankIcon;
+          if (index === 0) rankIcon = '🥇';
+          else if (index === 1) rankIcon = '🥈';
+          else if (index === 2) rankIcon = '🥉';
+          else rankIcon = index + 1;
 
-function updateMobileCards(players) {
-    const container = document.getElementById('mobilePlayersContainer');
-    if (!container) return;
-    
-    container.innerHTML = '';
+          const winRateDisplay = player.winRate > 0 ? player.winRate.toFixed(1) + '%' : 'N/A';
 
-    players.forEach((player, index) => {
-        let rankIcon;
-        if (index === 0) rankIcon = '🥇';
-        else if (index === 1) rankIcon = '🥈';
-        else if (index === 2) rankIcon = '🥉';
-        else rankIcon = index + 1;
+          row.innerHTML = `
+              <td>${rankIcon}</td>
+              <td><strong>${player.name}</strong></td>
+              <td>${player.wins}</td>
+              <td>${player.losses}</td>
+              <td>${winRateDisplay}</td>
+              <td>${player.setsWon}</td>
+              <td>${player.setsLost}</td>
+          `;
 
-        const winRateDisplay = player.winRate > 0 ? player.winRate.toFixed(1) + '% win rate' : 'N/A win rate';
-        const borderClass = index < 3 ? 'border-warning' : '';
+          tbody.appendChild(row);
+      });
+  }
 
-        const cardHTML = `
-            <div class="col-12">
-                <div class="card ${borderClass}">
-                    <div class="card-body py-3">
-                        <div class="row align-items-center">
-                            <div class="col-2 text-center">
-                                <span class="fs-4">${rankIcon}</span>
-                            </div>
-                            <div class="col-6">
-                                <h6 class="mb-1">${player.name}</h6>
-                                <small class="text-muted">${winRateDisplay}</small>
-                            </div>
-                            <div class="col-4 text-end">
-                                <div class="small">
-                                    <div><strong>${player.wins}</strong>W - <strong>${player.losses}</strong>L</div>
-                                    <div class="text-muted">Sets: ${player.setsWon}-${player.setsLost}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+  function updateMobileCards(players) {
+      const container = document.getElementById('mobilePlayersContainer');
+      if (!container) return;
 
-        container.innerHTML += cardHTML;
-    });
-}
+      container.innerHTML = '';
+
+      players.forEach((player, index) => {
+          let rankIcon;
+          if (index === 0) rankIcon = '🥇';
+          else if (index === 1) rankIcon = '🥈';
+          else if (index === 2) rankIcon = '🥉';
+          else rankIcon = index + 1;
+
+          const winRateDisplay = player.winRate > 0 ? player.winRate.toFixed(1) + '% win rate' : 'N/A win rate';
+          const borderClass = index < 3 ? 'border-warning' : '';
+
+          const cardHTML = `
+              <div class="col-12">
+                  <div class="card ${borderClass}">
+                      <div class="card-body py-3">
+                          <div class="row align-items-center">
+                              <div class="col-2 text-center">
+                                  <span class="fs-4">${rankIcon}</span>
+                              </div>
+                              <div class="col-6">
+                                  <h6 class="mb-1">${player.name}</h6>
+                                  <small class="text-muted">${winRateDisplay}</small>
+                              </div>
+                              <div class="col-4 text-end">
+                                  <div class="small">
+                                      <div><strong>${player.wins}</strong>W - <strong>${player.losses}</strong>L</div>
+                                      <div class="text-muted">Sets: ${player.setsWon}-${player.setsLost}</div>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          `;
+
+          container.innerHTML += cardHTML;
+      });
+  }
 </script>
 {% endblock %}
