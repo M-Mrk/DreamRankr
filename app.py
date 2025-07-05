@@ -731,7 +731,7 @@ def player_remove():
         
         # Remove the player from the ranking
         removePlayerFromRanking(playerId, rankingId)
-        flash(f"Successfully removed player {playerId} from ranking {rankingId}", "success")
+        flash(f"Successfully removed player {playerId} from ranking", "success")
         log(1, "player_remove", f"Removed Player {playerId} from Ranking with Id:{rankingId}")
         
     except ValueError as e:

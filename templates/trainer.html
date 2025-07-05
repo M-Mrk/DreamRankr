@@ -215,18 +215,15 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form method="post" action="/trainer/player_delete" class="me-auto d-inline">
-                    <input type="hidden" name="player_id" id="deletePlayerId">
-                    <input type="hidden" id="ranking-id" name="rankingId" value="{{ rankingId }}">
-                    <!-- Changed: Delete Player button now triggers a choice modal -->
-                    <button type="button" class="btn btn-outline-danger" id="deletePlayerBtn">Delete/Remove Player</button>
-                    <button type="submit" class="btn btn-danger d-none" id="confirmDeleteBtn">Confirm Delete</button>
-                </form>
-                <!-- New: Remove Player form, hidden by default -->
-                <form method="post" action="/trainer/player_remove" class="d-inline" id="removePlayerForm" style="display:none;">
-                    <input type="hidden" name="player_id" id="removePlayerId">
-                    <input type="hidden" id="ranking-id" name="rankingId" value="{{ rankingId }}">
-                </form>
+                <div class="me-auto">
+                    <!-- Changed: Simplified delete/remove button - only triggers choice modal -->
+                    <button type="button" class="btn btn-outline-danger" id="deletePlayerBtn" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#deleteRemoveChoiceModal">
+                        Delete/Remove Player
+                    </button>
+                    <!-- Remove hidden forms that were causing conflicts -->
+                </div>
                 <button type="button" class="btn btn-primary" id="savePlayerBtn">Save Changes</button>
             </div>
         </div>
@@ -257,7 +254,7 @@
     </div>
 </div>
 
-<!-- New: Delete/Remove Choice Modal -->
+<!-- Updated: Delete/Remove Choice Modal -->
 <div class="modal fade" id="deleteRemoveChoiceModal" tabindex="-1" aria-labelledby="deleteRemoveChoiceModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -268,15 +265,40 @@
             <div class="modal-body">
                 <p>Do you want to <strong>delete</strong> this player from the database entirely, or just <strong>remove</strong> them from this ranking?</p>
                 <p class="mb-0">Player: <span id="deleteRemovePlayerName" class="fw-bold"></span></p>
+                <div class="mt-3">
+                    <div class="alert alert-danger small mb-2">
+                        <strong>Delete:</strong> Removes player completely from database. Cannot be undone.
+                    </div>
+                    <div class="alert alert-warning small mb-0">
+                        <strong>Remove:</strong> Only removes player from this ranking. Player data preserved.
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmDeletePlayerBtn">Delete Player</button>
-                <button type="button" class="btn btn-warning" id="confirmRemovePlayerBtn">Remove from Ranking</button>
+                <button type="button" class="btn btn-warning" id="confirmRemovePlayerBtn">
+                    <span class="material-icons me-1" style="font-size: 16px;">person_remove</span>
+                    Remove from Ranking
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeletePlayerBtn">
+                    <span class="material-icons me-1" style="font-size: 16px;">delete_forever</span>
+                    Delete Player
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Hidden form for deleting a player -->
+<form id="deletePlayerForm" method="post" action="/trainer/player_delete" style="display:none;">
+    <input type="hidden" name="player_id" id="deletePlayerId">
+    <input type="hidden" name="rankingId" value="{{ rankingId }}">
+</form>
+<!-- Hidden form for removing a player from ranking -->
+<form id="removePlayerForm" method="post" action="/trainer/player_remove" style="display:none;">
+    <input type="hidden" name="player_id" id="removePlayerId">
+    <input type="hidden" name="rankingId" value="{{ rankingId }}">
+</form>
 
 <!-- Main Content Container -->
 <div class="container-fluid">

@@ -584,28 +584,9 @@ function initializeEditPlayerModal() {
   // Handle delete button click - show confirmation modal
   deleteBtn.addEventListener("click", function (e) {
     e.preventDefault();
-
-    const playerName = document.getElementById("editPlayerName").value;
-    const playerId = document.getElementById("editPlayerId").value;
-
-    // Update confirmation modal with player info
-    deletePlayerNameConfirm.textContent = playerName;
-
-    // Store player ID for the actual deletion
-    confirmDeleteBtn.setAttribute("data-player-id", playerId);
-    confirmDeleteBtn.setAttribute("data-player-name", playerName);
-
-    // Hide the edit modal and show confirmation modal
+    // Only close the edit modal; do NOT show the old confirmation modal
     const editModalInstance = bootstrap.Modal.getInstance(editModal);
     editModalInstance.hide();
-
-    // Show confirmation modal after edit modal is hidden
-    editModal.addEventListener("hidden.bs.modal", function showDeleteModal() {
-      const deleteModalInstance = new bootstrap.Modal(deleteConfirmationModal);
-      deleteModalInstance.show();
-      // Remove the event listener to prevent multiple attachments
-      editModal.removeEventListener("hidden.bs.modal", showDeleteModal);
-    });
   });
 
   // Handle actual deletion when confirmed
@@ -969,8 +950,11 @@ function initializeAddPlayerOffcanvasUI() {
 function initializeDeleteRemovePlayerModal() {
   // Delete/Remove Player logic
   const deletePlayerBtn = document.getElementById("deletePlayerBtn");
+  const deleteRemoveChoiceModalEl = document.getElementById(
+    "deleteRemoveChoiceModal"
+  );
   const deleteRemoveChoiceModal = new bootstrap.Modal(
-    document.getElementById("deleteRemoveChoiceModal")
+    deleteRemoveChoiceModalEl
   );
   const deleteRemovePlayerName = document.getElementById(
     "deleteRemovePlayerName"
@@ -985,7 +969,20 @@ function initializeDeleteRemovePlayerModal() {
   const confirmRemovePlayerBtn = document.getElementById(
     "confirmRemovePlayerBtn"
   );
+  const deletePlayerForm = document.getElementById("deletePlayerForm");
   const removePlayerForm = document.getElementById("removePlayerForm");
+
+  // New: Reference to the confirmation modal for delete
+  const deleteConfirmationModalEl = document.getElementById(
+    "deleteConfirmationModal"
+  );
+  const deleteConfirmationModal = new bootstrap.Modal(
+    deleteConfirmationModalEl
+  );
+  const deletePlayerNameConfirm = document.getElementById(
+    "deletePlayerNameConfirm"
+  );
+  const confirmDeletePlayer = document.getElementById("confirmDeletePlayer");
 
   if (deletePlayerBtn) {
     deletePlayerBtn.addEventListener("click", function () {
@@ -1002,18 +999,32 @@ function initializeDeleteRemovePlayerModal() {
     });
   }
 
-  if (confirmDeletePlayerBtn) {
-    confirmDeletePlayerBtn.addEventListener("click", function () {
-      document.querySelector('form[action="/trainer/player_delete"]').submit();
+  // Remove from ranking: submit directly
+  if (confirmRemovePlayerBtn) {
+    confirmRemovePlayerBtn.addEventListener("click", function () {
+      if (removePlayerForm) removePlayerForm.submit();
     });
   }
 
-  if (confirmRemovePlayerBtn) {
-    confirmRemovePlayerBtn.addEventListener("click", function () {
-      if (editPlayerId && removePlayerId) {
-        removePlayerId.value = editPlayerId.value;
+  // Delete: show confirmation modal before submitting
+  if (confirmDeletePlayerBtn) {
+    confirmDeletePlayerBtn.addEventListener("click", function () {
+      // Set player name in confirmation modal
+      if (deletePlayerNameConfirm && editPlayerName) {
+        deletePlayerNameConfirm.textContent = editPlayerName.value;
       }
-      removePlayerForm.submit();
+      // Hide choice modal, then show confirmation
+      deleteRemoveChoiceModal.hide();
+      setTimeout(() => {
+        deleteConfirmationModal.show();
+      }, 300); // Wait for modal transition
+    });
+  }
+
+  // Confirm delete in confirmation modal
+  if (confirmDeletePlayer) {
+    confirmDeletePlayer.addEventListener("click", function () {
+      if (deletePlayerForm) deletePlayerForm.submit();
     });
   }
 }
