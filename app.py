@@ -105,14 +105,20 @@ def home():
     """
     try:
         rankings = Rankings.query.all()
-        print(len(rankings))
-        allPlayers = Players.query.order_by(Players.wins.desc()).all()
-        return render_template('index.html', rankings=rankings, allPlayers=allPlayers)
     except Exception as e:
         log(4, "home", f"Error loading rankings for home page: {e}")
         flash("Can not show the rankings at the moment", "error")
         # Return empty rankings list as fallback
         return render_template('index.html', rankings=[], allPlayers=[])
+    
+    try:
+        allPlayers = Players.query.order_by(Players.wins.desc()).all()
+    except Exception as e:
+        log(4, "home", f"Error loading players for home page: {e}")
+        flash("Can not show the rankings at the moment", "error")
+        # Return empty rankings list as fallback
+        return render_template('index.html', rankings=rankings, allPlayers=[])
+    return render_template('index.html', rankings=rankings, allPlayers=allPlayers)
 
 @app.route('/view/<int:rankingId>')
 @requiresViewer
