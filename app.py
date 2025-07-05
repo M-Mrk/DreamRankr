@@ -280,7 +280,7 @@ def settingsTrainer():
         # Update ranking settings based on parsed form data
         if rankingId:
             ranking = db.session.get(Rankings, rankingId)
-            if ranking:
+            if ranking and (rankingSystem or autoEndDate or autoEndTime or disableAutoEnd):
                 # Handle ranking system
                 if rankingSystem:
                     ranking.sortedBy = rankingSystem
