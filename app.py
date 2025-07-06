@@ -9,6 +9,7 @@ from db import db, Players, PlayerBonuses, Rankings, PlayerRankings, Authenticat
 from bonuses import updateOrCreatePlayerBonus, validateBonusParameters
 from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes, startList, endList, deleteList, clearLogs, checkBeforeRendering, checkRankingAndFix
 from authentication import requiresViewer, requiresTrainer, authenticate
+from markdownUtils import getMarkDownFileContent
 from logger import log
 
 #Third party libaries
@@ -88,6 +89,20 @@ def logOut():
     session.clear()
     flash(f"Logged out", "success")
     return redirect('/login')
+
+@app.route('/privacy')
+def showPrivacyTerms():
+    """
+    Displays the privacy policy from markdown file.
+    Shows a fallback message if the file doesn't exist.
+    """
+    try:
+        return render_template('showMarkdown.html', fileName='Privacy Policy', content=getMarkDownFileContent('privacy'))
+        
+    except Exception as e:
+        log(4, "showPrivacyTerms", f"Error loading privacy policy: {e}")
+        flash("Could not load privacy policy at the moment", "error")
+        return render_template('showMarkdown.html', fileName='Privacy Policy', content=[])
 
 @app.route('/')
 @requiresViewer
@@ -800,6 +815,22 @@ if __name__ == '__main__':
     """
     try:
         with app.app_context():
+
+            # Define the path to the privacy file
+            privacyFilePath = os.path.join(app.root_path, 'user_content', 'privacy.md')
+        
+            # Check if file exists, if not create a default one
+            if not os.path.exists(privacyFilePath):
+                os.makedirs(os.path.dirname(privacyFilePath), exist_ok=True)
+                default_content = """
+                # Privacy Policy
+                # **Add your privacy policy here.**
+                DreamRankr is not accountable for your actions.
+                Treat data responsible
+                """
+                with open(privacyFilePath, 'w', encoding='utf-8') as f:
+                    f.write(default_content)
+
             # Note: Database table creation is now handled by Flask-Migrate
             # Only add test data if none exists to avoid duplicates
             

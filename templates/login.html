@@ -1,24 +1,60 @@
-{% extends "base.html" %}
-
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card shadow">
-                <div class="card-body p-5">
-                    <h3 class="card-title text-center mb-4">Login</h3>
-                    <form method="POST" action="/login">
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control form-control-lg" id="password" name="password" required>
-                        </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">Login</button>
-                        </div>
-                    </form>
-                </div>
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card shadow">
+        <div class="card-body p-5">
+          <h3 class="card-title text-center mb-4">Login</h3>
+          <form method="POST" action="/login">
+            <div class="row">
+              <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input
+                  type="password"
+                  class="form-control form-control-lg"
+                  id="password"
+                  name="password"
+                  autocomplete="current-password"
+                  required
+                />
+              </div>
             </div>
+            <div class="row">
+              <div class="mb-3">
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="privacyAgreement"
+                    name="privacyAgreement"
+                    autocomplete="on"
+                    required
+                  />
+                  <label class="form-check-label" for="privacyAgreement">
+                    I agree to the
+                    <a href="/privacy" class="text-decoration-none"
+                      >Privacy Policy</a
+                    >
+                    <span
+                      class="material-symbols-outlined ms-1"
+                      style="font-size: 16px; vertical-align: middle"
+                      >open_in_new</span
+                    >
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg">
+                  Login
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

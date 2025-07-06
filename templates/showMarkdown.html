@@ -1,0 +1,63 @@
+{% extends "base.html" %} {% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0 d-flex align-items-center">
+                <span class="material-symbols-outlined me-2">privacy_tip</span>
+                {{ fileName }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="markdownContent">
+                    {% if content %}
+                        {{ content|safe }}
+                    {% else %}
+                        <h2>Could not load {{ fileName }}... Try again later</h2>
+                        <p>If the issue perissts please contact a Trainer</p>
+                    {% endif %}
+                </div>
+
+                <!-- {% if session['permissionLevel'] == "trainer" %}
+                        <hr class="my-4">
+                        <div class="text-center">
+                            <a href="{{ url_for('editMarkdown', contentId=content.id) }}" class="btn btn-primary">
+                                <span class="material-symbols-outlined me-2">edit</span>
+                                Edit
+                            </a>
+                        </div>
+                        {% endif %} -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+  .markdownContent {
+    line-height: 1.6;
+  }
+
+  .markdownContent h1 {
+    color: #0d6efd;
+    border-bottom: 2px solid #0d6efd;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .markdownContent h2 {
+    color: #6c757d;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .markdownContent p {
+    margin-bottom: 1rem;
+  }
+
+  .markdownContent ul,
+  .markdownContent ol {
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+  }
+</style>
+{% endblock %}
