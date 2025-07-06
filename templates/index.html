@@ -26,28 +26,17 @@
                 {% endif %}
               </h5>
               {% if session['permissionLevel'] == "trainer" %}
-              <form
-                method="POST"
-                action="{{ url_for('settingsTrainer') }}"
-                class="d-inline"
+              <a
+                href="{{ url_for('settingsTrainer', rankingId=ranking.id) }}"
+                class="btn btn-link p-0 text-muted"
+                title="Settings"
               >
-                <input
-                  type="hidden"
-                  name="rankingId"
-                  value="{{ ranking.id }}"
-                />
-                <button
-                  type="submit"
-                  class="btn btn-link p-0 text-muted"
-                  title="Settings"
+                <span
+                  class="material-symbols-outlined"
+                  style="font-size: 0.9rem"
+                  >settings</span
                 >
-                  <span
-                    class="material-symbols-outlined"
-                    style="font-size: 0.9rem"
-                    >settings</span
-                  >
-                </button>
-              </form>
+              </a>
               {% endif %}
             </div>
             {% if ranking.ended %}

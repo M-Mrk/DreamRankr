@@ -271,12 +271,18 @@ def endListTrainer():
 @app.route('/trainer/settings', methods=['GET', 'POST'])
 @requiresTrainer
 @checkBeforeRendering
-def settingsTrainer():
-    rankingId = None
+def selectSettingsTrainer():
+    return render_template(
+            'selectRankingForSettings.html',
+            rankings=Rankings.query.all(),
+            allPlayers=[]
+        )
+
+@app.route('/trainer/settings/<int:rankingId>', methods=['GET', 'POST'])
+@requiresTrainer
+@checkBeforeRendering
+def settingsTrainer(rankingId):
     if request.method == 'POST':
-        rankingId = request.form.get('rankingId')
-        session['selectedRankingId'] = rankingId
-        
         # Parse form arguments correctly based on the HTML form fields
         rankingSystem = request.form.get('rankingSystem')  # select dropdown
         autoEndDate = request.form.get('autoEndDate')  # date input
@@ -306,27 +312,23 @@ def settingsTrainer():
                         # Validate that end date is in the future
                         if end_datetime_utc <= dt.datetime.now(dt.timezone.utc):
                             flash("End date must be in the future", "error")
-                            return redirect('/trainer/settings')
+                            return redirect(f'/trainer/settings/{rankingId}')
                             
                         ranking.endsOn = end_datetime_utc
                     except ValueError as e:
                         flash("Invalid date/time format", "error")
-                        return redirect('/trainer/settings')
+                        return redirect(f'/trainer/settings/{rankingId}')
                 
                 db.session.commit()
                 flash("Saved settings", "success")
         
-        return redirect('/trainer/settings')
-    else:
-        if session.get('selectedRankingId'):
-            rankingId = session['selectedRankingId']
+        return redirect(f'/trainer/settings/{rankingId}')
 
     try:
-        rankings = Rankings.query.all()
-        allPlayers = Players.query.order_by(Players.wins.desc()).all()
-        currentRanking = None
-        if rankingId:
-            currentRanking = db.session.get(Rankings, rankingId)
+        currentRanking = db.session.get(Rankings, rankingId)
+        if not currentRanking:
+            flash("Ranking not found", "error")
+            return redirect('/trainer/settings')
         
         # Convert UTC times to local timezone for display
         currentRankingWithLocalTime = None
@@ -338,18 +340,15 @@ def settingsTrainer():
         elif currentRanking:
             currentRankingWithLocalTime = currentRanking
         
-        session['selectedRankingId'] = ""
         return render_template(
             'settingsTrainer.html',
-            rankings=rankings,
             rankingId=rankingId,
-            currentRanking=currentRankingWithLocalTime,  # Pass the version with local time
-            allPlayers=allPlayers
+            currentRanking=currentRankingWithLocalTime  # Pass the version with local time
         )
     except Exception as e:
-        log(4, "settingsTrainer", f"Error loading rankings for home page: {e}")
-        flash("Can not show the rankings at the moment", "error")
-        return render_template('settingsTrainer.html', rankings=[], allPlayers=[])
+        log(4, "settingsTrainer", f"Error loading ranking {rankingId}: {e}")
+        flash("Can not show the ranking at the moment", "error")
+        return redirect('/trainer/settings')
 
 @app.route('/trainer/fix', methods=['POST'])
 @requiresTrainer
@@ -357,7 +356,7 @@ def fixRankingTrainer():
     rankingId = request.form.get('rankingId')
     checkRankingAndFix(rankingId)
     flash("Performed maintenance", "success")
-    return redirect('/trainer/settings')
+    return redirect(f'/trainer/settings/{rankingId}')
 
 @app.route('/trainer/start_match', methods=['POST'])
 @requiresTrainer
