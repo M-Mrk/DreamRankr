@@ -1,4 +1,5 @@
 from db import db, Players, OnGoingMatches, PlayerBonuses, PlayerRankings
+from services import getRankingOfPlayer
 from logger import log
 
 class Bonus:
@@ -33,6 +34,11 @@ def compareFromStr(ranking, operator, limitRanking):
     try:
         if not operator:
             log(3, 'compareFromStrForBonus', f"Provided operator was empty: {operator}")
+            return False
+        
+        # Validate inputs
+        if ranking is None or limitRanking is None:
+            log(3, 'compareFromStrForBonus', f"Invalid input: ranking={ranking}, limitRanking={limitRanking}")
             return False
         
         # Convert rankings to integers for comparison
@@ -104,8 +110,10 @@ def getBonus(match):
                 f"Missing ranking data - Challenger: {match.challengerId}, Defender: {match.defenderId}, Ranking: {match.rankingId}")
             return Bonus()
 
-        challenger_rank = challengerRanking.ranking
-        defender_rank = defenderRanking.ranking
+        # Hier gucken ob points oder ranking based am besten service dafür einbetten
+
+        challenger_rank = getRankingOfPlayer(match.challengerId, match.rankingId)
+        defender_rank = getRankingOfPlayer(match.defenderId, match.rankingId)
 
         # Check challenger's bonus condition against defender's ranking
         if challengerBonusEntry:

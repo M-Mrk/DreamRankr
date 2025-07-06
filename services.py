@@ -1,6 +1,5 @@
 from db import db, PlayerRankings, Players, OnGoingMatches, PlayerBonuses, FinishedMatches, Rankings, LogEntries
 from playerStats import changeStats
-from bonuses import getBonus
 from logger import log
 import datetime as dt
 from functools import wraps
@@ -90,6 +89,47 @@ def getPlayersOfRanking(rankingId):
     except Exception as e:
         log(4, "getPlayersOfRanking", f"Error fetching players for ranking {rankingId}: {e}")
         return []
+
+def getRankingOfPlayer(playerId, rankingId):
+    """
+    Retrieves the ranking of a player in a specific ranking.
+
+    Args:
+        playerId: ID of the player.
+        rankingId: ID of the ranking.
+
+    Returns:
+        The ranking position of the player or None if an error occurs.
+    """
+    try:
+        ranking = db.session.get(Rankings, rankingId)
+        if not ranking:
+            log(3, "getRankingOfPlayer", f"Ranking with ID {rankingId} does not exist")
+            return None
+
+        rankingEntry = getRankingAndPoints(playerId, rankingId)
+        if not rankingEntry:
+            log(3, "getRankingOfPlayer", f"No ranking entry found for player {playerId} in ranking {rankingId}")
+            return None
+
+        if ranking.sortedBy == "standard":
+            log(1, "getRankingOfPlayer", f"Returning standard ranking for player {playerId} in ranking {rankingId}")
+            return rankingEntry.ranking
+        elif ranking.sortedBy == "points":
+            allRankingEntries = getPlayersOfRanking(rankingId)
+            allRankingEntries.sort(key=lambda player: player.points, reverse=True)
+            for index, player in enumerate(allRankingEntries, start=1):
+                # Convert both to int to ensure proper comparison
+                if int(player.id) == int(playerId):
+                    return index
+            log(3, "getRankingOfPlayer", f"Player {playerId} not found in points-based ranking for ranking {rankingId}")
+            return None
+        else:
+            log(4, "getRankingOfPlayer", f"Invalid sortedBy option '{ranking.sortedBy}' for ranking {rankingId}")
+            return None
+    except Exception as e:
+        log(4, "getRankingOfPlayer", f"Error retrieving ranking for player {playerId} in ranking {rankingId}: {e}")
+        return None
 
 def getActiveMatchesOfRanking(rankingId):
     """
@@ -326,6 +366,7 @@ def startMatch(challengerId, defenderId, rankingId):
     """
     Starts a new match between two players in a ranking.
     """
+    from bonuses import getBonus
     try:
         challenger = db.session.get(Players, challengerId)
         defender = db.session.get(Players, defenderId)
