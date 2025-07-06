@@ -1,0 +1,152 @@
+{% extends "base.html" %} {% block content %}
+<div class="container-fluid h-100">
+  <div class="row g-3 justify-content-center">
+    <div class="col-12">
+      <h1 class="text-center mb-1">
+        <span class="material-symbols-outlined me-2">edit</span>
+        Edit Content
+      </h1>
+    </div>
+    <div class="col-12 col-lg-10">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0 d-flex align-items-center">
+            <span class="material-symbols-outlined me-2">description</span>
+            Markdown Editor
+          </h4>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            <textarea id="my-text-area" name="content">
+                {{ content|safe }}
+            </textarea>
+
+            <div class="mt-3 d-flex justify-content-between">
+              <a
+                href="{{ url_for('home') }}"
+                class="btn btn-secondary"
+                style="font-size: 16px; vertical-align: -0.1em"
+              >
+                <span class="material-symbols-outlined me-1">arrow_back</span>
+                Cancel
+              </a>
+              <button
+                type="submit"
+                class="btn btn-success"
+                style="font-size: 16px; vertical-align: -0.1em"
+              >
+                <span class="material-symbols-outlined me-1">save</span>
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Fix EasyMDE side-by-side mode to not go fullscreen */
+  .EasyMDEContainer .editor-preview-side {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 50% !important;
+    height: auto !important;
+    max-height: 600px !important; /* Match editor maxHeight */
+    overflow-y: auto !important; /* Add scrollbar when content exceeds height */
+    z-index: auto !important;
+  }
+
+  .EasyMDEContainer.sideBySideActive {
+    position: relative !important;
+    max-height: 600px !important; /* Constrain entire container */
+  }
+
+  .EasyMDEContainer.sideBySideActive .CodeMirror {
+    width: 50% !important;
+    border-right: 1px solid #ddd !important;
+    max-height: 600px !important; /* Ensure editor also respects height */
+  }
+
+  /* Ensure toolbar remains accessible */
+  .EasyMDEContainer .editor-toolbar {
+    position: relative !important;
+    z-index: 10 !important;
+  }
+
+  /* Better tablet/iPad experience */
+  @media (max-width: 991.98px) {
+    .EasyMDEContainer .editor-preview-side {
+      display: none !important;
+    }
+
+    .EasyMDEContainer.sideBySideActive .CodeMirror {
+      width: 100% !important;
+      border-right: none !important;
+    }
+  }
+
+  /* Improve touch targets for tablet */
+  .editor-toolbar a {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Ensure consistent height behavior */
+  .EasyMDEContainer .CodeMirror {
+    min-height: 300px !important;
+    max-height: 600px !important;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const easymde = new EasyMDE({
+      element: document.getElementById("my-text-area"),
+      spellChecker: false,
+      status: false,
+      minHeight: "300px",
+      maxHeight: "600px",
+      toolbar: [
+        "bold",
+        "italic",
+        "heading",
+        "|",
+        "quote",
+        "unordered-list",
+        "ordered-list",
+        "|",
+        "link",
+        "image",
+        "|",
+        "preview",
+        "side-by-side",
+        "|",
+        "guide",
+      ],
+      sideBySideFullscreen: false, // Prevent fullscreen side-by-side
+      shortcuts: {
+        toggleSideBySide: null, // Disable F9 shortcut that causes issues
+      },
+    });
+
+    // Override side-by-side behavior to prevent fullscreen
+    easymde.codemirror.on("optionChange", function (instance, option) {
+      if (option === "fullScreen") {
+        // Prevent fullscreen when side-by-side is active
+        const container = easymde.gui.toolbar.parentNode;
+        if (container.classList.contains("sideBySideActive")) {
+          instance.setOption("fullScreen", false);
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}

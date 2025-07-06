@@ -1,63 +1,209 @@
 {% extends "base.html" %} {% block content %}
 <div class="row justify-content-center">
-    <div class="col-12 col-lg-8">
-        <div class="card shadow">
-            <div class="card-header bg-info text-white">
-                <h4 class="mb-0 d-flex align-items-center">
-                <span class="material-symbols-outlined me-2">privacy_tip</span>
-                {{ fileName }}
-                </h4>
-            </div>
-            <div class="card-body">
-                <div class="markdownContent">
-                    {% if content %}
-                        {{ content|safe }}
-                    {% else %}
-                        <h2>Could not load {{ fileName }}... Try again later</h2>
-                        <p>If the issue perissts please contact a Trainer</p>
-                    {% endif %}
-                </div>
-
-                <!-- {% if session['permissionLevel'] == "trainer" %}
-                        <hr class="my-4">
-                        <div class="text-center">
-                            <a href="{{ url_for('editMarkdown', contentId=content.id) }}" class="btn btn-primary">
-                                <span class="material-symbols-outlined me-2">edit</span>
-                                Edit
-                            </a>
-                        </div>
-                        {% endif %} -->
-            </div>
+  <div class="col-12 col-lg-8">
+    <div class="card shadow">
+      <div class="card-header bg-info text-white d-flex justify-content-between">
+        <h4 class="mb-0 d-flex align-items-center">
+          <span class="material-symbols-outlined me-2">privacy_tip</span>
+          {{ fileName }}
+        </h4>
+        <div>
+            {% if session['permissionLevel'] == "trainer" %}
+                {% if contentId %}
+                <a href="{{ url_for('showEditor', contentId=contentId) }}" class="btn btn-primary ms-auto">
+                {% elif content.id %}
+                <a href="{{ url_for('showEditor', contentId=content.id) }}" class="btn btn-primary ms-auto">
+                {% endif %}
+                <span class="material-symbols-outlined me-2">edit</span>
+                Edit
+                </a>
+            {% endif %}
         </div>
+      </div>
+      <div class="card-body">
+        <div class="markdownContent editor-preview">
+          {% if content %} {{ content|safe }} {% else %}
+          <h2>Could not load {{ fileName }}... Try again later</h2>
+          <p>If the issue persists please contact a Trainer</p>
+          {% endif %}
+        </div>
+
+        
+      </div>
     </div>
+  </div>
 </div>
 
 <style>
-  .markdownContent {
+  /* EasyMDE-inspired markdown styling */
+  .markdownContent.editor-preview {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
     line-height: 1.6;
+    color: #333;
+    background-color: #fff;
+    padding: 1rem;
+    max-width: none;
   }
 
-  .markdownContent h1 {
-    color: #0d6efd;
-    border-bottom: 2px solid #0d6efd;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1.5rem;
+  .markdownContent.editor-preview h1,
+  .markdownContent.editor-preview h2,
+  .markdownContent.editor-preview h3,
+  .markdownContent.editor-preview h4,
+  .markdownContent.editor-preview h5,
+  .markdownContent.editor-preview h6 {
+    margin: 1.5em 0 0.5em 0;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #24292e;
   }
 
-  .markdownContent h2 {
-    color: #6c757d;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
+  .markdownContent.editor-preview h1 {
+    font-size: 2em;
+    border-bottom: 1px solid #eaecef;
+    padding-bottom: 0.3em;
+    margin-bottom: 1em;
   }
 
-  .markdownContent p {
-    margin-bottom: 1rem;
+  .markdownContent.editor-preview h2 {
+    font-size: 1.5em;
+    border-bottom: 1px solid #eaecef;
+    padding-bottom: 0.3em;
   }
 
-  .markdownContent ul,
-  .markdownContent ol {
-    margin-bottom: 1rem;
-    padding-left: 2rem;
+  .markdownContent.editor-preview h3 {
+    font-size: 1.25em;
+  }
+
+  .markdownContent.editor-preview h4 {
+    font-size: 1em;
+  }
+
+  .markdownContent.editor-preview h5 {
+    font-size: 0.875em;
+  }
+
+  .markdownContent.editor-preview h6 {
+    font-size: 0.85em;
+    color: #6a737d;
+  }
+
+  .markdownContent.editor-preview p {
+    margin: 0 0 1em 0;
+  }
+
+  .markdownContent.editor-preview ul,
+  .markdownContent.editor-preview ol {
+    margin: 0 0 1em 0;
+    padding-left: 2em;
+  }
+
+  .markdownContent.editor-preview li {
+    margin: 0.25em 0;
+  }
+
+  .markdownContent.editor-preview blockquote {
+    margin: 0 0 1em 0;
+    padding: 0 1em;
+    color: #6a737d;
+    border-left: 0.25em solid #dfe2e5;
+  }
+
+  .markdownContent.editor-preview code {
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    background-color: rgba(27, 31, 35, 0.05);
+    border-radius: 3px;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  .markdownContent.editor-preview pre {
+    margin: 0 0 1em 0;
+    padding: 1em;
+    background-color: #f6f8fa;
+    border-radius: 6px;
+    overflow: auto;
+    font-size: 85%;
+    line-height: 1.45;
+  }
+
+  .markdownContent.editor-preview pre code {
+    padding: 0;
+    margin: 0;
+    background-color: transparent;
+    border: 0;
+    font-size: 100%;
+  }
+
+  .markdownContent.editor-preview table {
+    border-spacing: 0;
+    border-collapse: collapse;
+    margin: 0 0 1em 0;
+    width: 100%;
+  }
+
+  .markdownContent.editor-preview table th,
+  .markdownContent.editor-preview table td {
+    padding: 6px 13px;
+    border: 1px solid #dfe2e5;
+  }
+
+  .markdownContent.editor-preview table th {
+    font-weight: 600;
+    background-color: #f6f8fa;
+  }
+
+  .markdownContent.editor-preview table tr:nth-child(2n) {
+    background-color: #f6f8fa;
+  }
+
+  .markdownContent.editor-preview img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    margin: 0.5em 0;
+  }
+
+  .markdownContent.editor-preview a {
+    color: #0366d6;
+    text-decoration: none;
+  }
+
+  .markdownContent.editor-preview a:hover {
+    text-decoration: underline;
+  }
+
+  .markdownContent.editor-preview hr {
+    height: 0.25em;
+    padding: 0;
+    margin: 1.5em 0;
+    background-color: #e1e4e8;
+    border: 0;
+  }
+
+  /* Mobile/tablet optimizations */
+  @media (max-width: 768px) {
+    .markdownContent.editor-preview {
+      font-size: 16px; /* Better readability on mobile */
+      padding: 0.75rem;
+    }
+
+    .markdownContent.editor-preview h1 {
+      font-size: 1.75em;
+    }
+
+    .markdownContent.editor-preview h2 {
+      font-size: 1.375em;
+    }
+
+    .markdownContent.editor-preview table {
+      font-size: 14px;
+      overflow-x: auto;
+      display: block;
+      white-space: nowrap;
+    }
   }
 </style>
 {% endblock %}

@@ -9,7 +9,7 @@ from db import db, Players, PlayerBonuses, Rankings, PlayerRankings, Authenticat
 from bonuses import updateOrCreatePlayerBonus, validateBonusParameters
 from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes, startList, endList, deleteList, clearLogs, checkBeforeRendering, checkRankingAndFix
 from authentication import requiresViewer, requiresTrainer, authenticate
-from markdownUtils import getMarkDownFileContent
+from markdownUtils import getMarkDownContent, changeMarkDown
 from logger import log
 
 #Third party libaries
@@ -97,12 +97,12 @@ def showPrivacyTerms():
     Shows a fallback message if the file doesn't exist.
     """
     try:
-        return render_template('showMarkdown.html', fileName='Privacy Policy', content=getMarkDownFileContent('privacy'))
+        return render_template('showMarkdown.html', fileName='Privacy Policy', content=getMarkDownContent('privacy'), contentId="privacy")
         
     except Exception as e:
         log(4, "showPrivacyTerms", f"Error loading privacy policy: {e}")
         flash("Could not load privacy policy at the moment", "error")
-        return render_template('showMarkdown.html', fileName='Privacy Policy', content=[])
+        return render_template('showMarkdown.html', fileName='Privacy Policy', content=[], contentId=[])
 
 @app.route('/')
 @requiresViewer
@@ -216,6 +216,17 @@ def trainer(rankingId):
                              activeMatches=[], 
                              rankingId=rankingId, 
                              allPlayers=[])
+
+@app.route('/trainer/editMarkDown/<contentId>', methods=['GET', 'POST'])
+@requiresTrainer
+def showEditor(contentId):
+    if request.method == 'GET':
+        return render_template('editMarkdown.html', content=getMarkDownContent(contentId, True))
+    else:
+        editedContent = request.form.get('content')
+        changeMarkDown(contentId, editedContent)
+        flash("Saved changes", 'success')
+        return redirect(f'/trainer/editMarkDown/{contentId}')
 
 @app.route('/trainer/start', methods=['GET', 'POST'])
 @requiresTrainer
