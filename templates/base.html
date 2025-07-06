@@ -33,6 +33,7 @@
       href="{{ url_for('static', filename='favicon/favicon.png') }}"
     />
   </head>
+
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
       <div class="container">
@@ -101,7 +102,7 @@
 
     <!-- Toast container for flash messages -->
     <div
-      class="toast-container position-fixed top-0 end-0 p-3"
+      class="toast-container position-fixed mt-5 end-0 p-3"
       style="z-index: 1055"
     >
       {% with messages = get_flashed_messages(with_categories=true) %} {% if
