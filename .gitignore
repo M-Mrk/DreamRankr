@@ -4,3 +4,4 @@ venv/
 __pycache__/
 migrations/
 user_content/*
+.env

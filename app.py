@@ -12,6 +12,7 @@ from repairs import checkRankingAndFix
 from authentication import requiresViewer, requiresTrainer, authenticate
 from markdownUtils import getMarkDownContent, changeMarkDown
 from logger import log
+from dotenv import load_dotenv, set_key
 
 #Third party libaries
 from datetime import datetime, timezone, timedelta
@@ -20,13 +21,33 @@ import os
 from werkzeug.security import generate_password_hash
 import zoneinfo
 
+# Load existing .env file
+load_dotenv()
+
 # =============================================================================
 # TIMEZONE CONFIGURATION
 # =============================================================================
 # Set your local timezone here - this will be used for all user inputs
 # that don't explicitly specify a timezone (like date/time form inputs)
-LOCAL_TIMEZONE = "Europe/Berlin"  # Change this to your actual timezone
-LOCAL_TZ = zoneinfo.ZoneInfo(LOCAL_TIMEZONE)
+LOCAL_TIMEZONE = os.environ.get('LOCAL_TIMEZONE')
+
+try:
+    LOCAL_TZ = zoneinfo.ZoneInfo(LOCAL_TIMEZONE)
+except:
+    LOCAL_TZ = None
+    while not LOCAL_TZ:
+        print("Timezone not Set!")
+        print("Please enter timezone tz database key (https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) e.g. Munich in Germany -> 'Europe/Berlin':")
+        inputKey = input()
+        try:
+            LOCAL_TZ = zoneinfo.ZoneInfo(inputKey)
+            print(f"Timezone set to {inputKey}")
+            set_key('.env', 'LOCAL_TIMEZONE', inputKey)  # Write to .env file
+            os.environ['LOCAL_TIMEZONE'] = inputKey
+        except Exception as e:
+            LOCAL_TZ = None
+            print(f"Invalid timezone key: {inputKey}. Error: {e}, please try again")
+
 
 def get_local_timezone():
     """Returns the configured local timezone for the application"""
@@ -62,8 +83,16 @@ def convert_utc_to_local(utc_datetime):
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Main.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = os.environ.get('SECRET_KEY', 'K8sZt^cH6Brf@4seK&6C2kNqa6a7ve')
-app.permanent_session_lifetime = timedelta(minutes=30)  # 30 minute timeout
+
+# For secret key:
+app.secret_key = os.environ.get('SECRET_KEY')
+if not app.secret_key:
+    secret_key = os.urandom(24).hex()
+    set_key('.env', 'SECRET_KEY', secret_key)  # Write to .env file
+    os.environ['SECRET_KEY'] = secret_key
+    app.secret_key = secret_key
+
+app.permanent_session_lifetime = timedelta(days=14)  # 30 minute timeout
 
 # Initialize database and migration support
 db.init_app(app)
@@ -827,7 +856,6 @@ if __name__ == '__main__':
     """
     try:
         with app.app_context():
-
             # Define the path to the privacy file
             privacyFilePath = os.path.join(app.root_path, 'user_content', 'privacy.md')
         
