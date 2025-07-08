@@ -6,7 +6,7 @@ db = SQLAlchemy()
 
 class Players(db.Model):
     """
-    Represents individual players in the table tennis ranking system.
+    Represents individual players in the ranking system.
     Stores basic player information and overall statistics across all rankings.
     """
     id = db.Column(db.Integer, primary_key=True)

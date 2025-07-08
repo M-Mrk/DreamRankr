@@ -5,7 +5,7 @@ from flask_migrate import Migrate
 #Database
 from db import db, Players, PlayerBonuses, Rankings, PlayerRankings, Authentication
 
-#TT Ranking files
+#DreamRankr files
 from bonuses import updateOrCreatePlayerBonus, validateBonusParameters
 from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes, startList, endList, deleteList, clearLogs, checkBeforeRendering, checkRankingAndFix
 from authentication import requiresViewer, requiresTrainer, authenticate

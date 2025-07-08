@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Table Tennis Ranking</title>
+    <title>DreamRankr</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="{{ url_for('static', filename='favicon/logoplain.svg') }}"
+    />
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -28,14 +33,14 @@
     <link
       rel="icon"
       type="image/x-icon"
-      href="{{ url_for('static', filename='favicon/favicon.ico') }}"
+      href="{{ url_for('static', filename='favicon/logoplain.svg') }}"
     />
     <script src="{{ url_for('static', filename='JS/Main.js')}}"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link
       rel="apple-touch-icon"
-      href="{{ url_for('static', filename='favicon/favicon.png') }}"
+      href="{{ url_for('static', filename='favicon/logoplain.svg') }}"
     />
   </head>
 
@@ -66,8 +71,11 @@
           >
             <span class="material-symbols-outlined">arrow_back</span>
           </div>
-          {% endif %}
-          <a class="navbar-brand" href="{{ url_for('home') }}">TT Rankings</a>
+            {% endif %}
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
+            <img src="{{ url_for('static', filename='favicon/logoplain.svg') }}" alt="DreamRankr Logo" style="height: 45px; margin-right: 10px;">
+            DreamRankr
+            </a>
           {% if session['permissionLevel'] == "trainer" %}
           <span class="badge text-bg-info fs-4">Trainer</span>
           {% endif %}
