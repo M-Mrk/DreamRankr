@@ -7,7 +7,8 @@ from db import db, Players, PlayerBonuses, Rankings, PlayerRankings, Authenticat
 
 #DreamRankr files
 from bonuses import updateOrCreatePlayerBonus, validateBonusParameters
-from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes, startList, endList, deleteList, clearLogs, checkBeforeRendering, checkRankingAndFix
+from services import getActiveMatchesOfRanking, getPlayersOfRanking, newPlayer, addPlayerToRanking, startMatch, endMatch, removePlayerFromRanking, deletePlayer, updatePlayerRanking, updatePlayerAttributes, startList, endList, deleteList, clearLogs, checkBeforeRendering
+from repairs import checkRankingAndFix
 from authentication import requiresViewer, requiresTrainer, authenticate
 from markdownUtils import getMarkDownContent, changeMarkDown
 from logger import log
