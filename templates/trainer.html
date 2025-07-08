@@ -7,40 +7,358 @@
 <div class="modal fade" id="challengeWindow" tabindex="-1" aria-labelledby="challengeWindowLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">Start Challenge</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h1 class="modal-title fs-5 d-flex align-items-center" id="challengeWindowLabel">
+                    <span class="material-symbols-outlined me-2">swords</span>
+                    Start Challenge
+                </h1>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label id="challengeWindowInputLabel" for="input-datalist">Who does the player challenge?</label>
-                    <form method="post" action="/trainer/start_match">
-                        <input type="text" 
-                            class="form-control" 
-                            placeholder="Choose a player..." 
-                            list="list-defender" 
-                            id="input-datalist"
-                            autocomplete="off"
-                            required>
-                        <input type="hidden" id="challenger-id" name="challenger_id">
-                        <input type="hidden" id="defender-id" name="defender_id">
-                        <input type="hidden" id="ranking-id" name="rankingId" value="{{ rankingId }}">
-                        <datalist id="list-defender">
-                            <!-- Options will be populated dynamically -->
-                        </datalist>
-                        <div class="invalid-feedback">
-                            Please select a valid player from the list.
+                <div class="text-center mb-4">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div class="challenger-info text-center">
+                            <span class="material-symbols-outlined text-primary mb-2" style="font-size: 2rem;">person</span>
+                            <h5 class="mb-0" id="challengerName">Challenger</h5>
+                            <small class="text-muted">challenges</small>
                         </div>
-                    </form>
+                        <div class="mx-4">
+                            <span class="material-symbols-outlined text-muted" style="font-size: 2rem;">trending_flat</span>
+                        </div>
+                        <div class="defender-info text-center">
+                            <span class="material-symbols-outlined text-secondary mb-2" style="font-size: 2rem;">shield</span>
+                            <h5 class="mb-0 text-muted">Select Defender</h5>
+                        </div>
+                    </div>
                 </div>
+
+                <form method="post" action="/trainer/start_match" id="challengeForm">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <span class="material-symbols-outlined me-2" style="font-size: 18px;">search</span>
+                            Choose defender to challenge:
+                        </label>
+                        
+                        <!-- Search input with improved styling -->
+                        <div class="position-relative">
+                            <input type="text" 
+                                class="form-control form-control-lg" 
+                                placeholder="Search for a player..." 
+                                id="defenderSearch"
+                                autocomplete="off"
+                                style="padding-left: 3rem; min-height: 48px;">
+                            <span class="material-symbols-outlined position-absolute top-50 start-0 translate-middle-y ms-3 text-muted">
+                                search
+                            </span>
+                        </div>
+
+                        <!-- Player selection cards -->
+                        <div class="player-selection-container mt-3" id="playerCards" style="max-height: 300px; overflow-y: auto;">
+                            <!-- Player cards will be populated here -->
+                        </div>
+                        
+                        <div class="invalid-feedback d-block" id="defenderError" style="display: none !important;">
+                            Please select a defender to challenge.
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="challenger-id" name="challenger_id">
+                    <input type="hidden" id="defender-id" name="defender_id">
+                    <input type="hidden" id="ranking-id" name="rankingId" value="{{ rankingId }}">
+                </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary">Start</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <span class="material-symbols-outlined me-1" style="font-size: 16px;">close</span>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-success" id="startChallengeBtn" disabled>
+                    <span class="material-symbols-outlined me-1" style="font-size: 16px;">play_arrow</span>
+                    Start Challenge
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+/* Enhanced challenge modal styling */
+.player-card {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+    min-height: 48px; /* Touch-friendly height */
+}
+
+.player-card:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.player-card.selected {
+    border-color: #28a745;
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.player-card.selected .material-symbols-outlined {
+    color: #28a745;
+}
+
+.player-card-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.player-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Touch-friendly improvements for tablets */
+@media (max-width: 991.98px) {
+    .player-card {
+        min-height: 56px;
+        padding: 16px;
+    }
+    
+    .modal-dialog {
+        margin: 1rem;
+    }
+    
+    .form-control-lg {
+        min-height: 56px !important;
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+}
+
+/* Search input focus effects */
+#defenderSearch:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+/* Empty state styling */
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+.empty-state .material-symbols-outlined {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const defenderSearch = document.getElementById('defenderSearch');
+    const playerCards = document.getElementById('playerCards');
+    const startChallengeBtn = document.getElementById('startChallengeBtn');
+    const challengerIdInput = document.getElementById('challenger-id');
+    const defenderIdInput = document.getElementById('defender-id');
+    const defenderError = document.getElementById('defenderError');
+    const challengeForm = document.getElementById('challengeForm');
+    
+    let selectedDefenderId = null;
+    let challengerId = null;
+    let challengerPosition = null;
+    let allPlayers = [];
+    
+    // Get ranking type from backend
+    const rankingSortedBy = "{{ ranking.sortedBy }}";
+
+    // Initialize with player data from the table
+    function initializePlayers() {
+        const playerRows = document.querySelectorAll('.player-row');
+        allPlayers = Array.from(playerRows).map((row, index) => ({
+            id: row.dataset.playerId,
+            name: row.dataset.playerName,
+            position: index + 1, // Position is always based on table order (1-based)
+            displayRanking: row.cells[0].textContent.trim(), // What's shown in the table
+            points: row.cells[2].textContent.trim(),
+            wins: row.cells[3].textContent.trim(),
+            losses: row.cells[4].textContent.trim()
+        }));
+    }
+
+    // Get eligible defenders (higher positions = lower position numbers)
+    function getEligibleDefenders(challengerPos) {
+        return allPlayers.filter(player => 
+            player.id !== challengerId && 
+            player.position < challengerPos // Lower position number = higher ranking
+        );
+    }
+
+    // Render player cards
+    function renderPlayerCards(players) {
+        if (players.length === 0) {
+            playerCards.innerHTML = `
+                <div class="empty-state">
+                    <span class="material-symbols-outlined">search_off</span>
+                    <p class="mb-0">No eligible players found</p>
+                    <small class="text-muted">Only players with higher positions can be challenged</small>
+                </div>
+            `;
+            return;
+        }
+
+        playerCards.innerHTML = players.map(player => {
+            const rankingDisplay = rankingSortedBy === "standard" 
+                ? `Rank ${player.displayRanking}`
+                : `Position ${player.position}`;
+                
+            return `
+                <div class="player-card" 
+                     data-player-id="${player.id}" 
+                     data-player-name="${player.name}">
+                    <div class="player-card-content">
+                        <div class="player-info">
+                            <span class="material-symbols-outlined me-3 text-primary">person</span>
+                            <div>
+                                <div class="fw-bold">${player.name}</div>
+                                <small class="text-muted">${rankingDisplay}</small>
+                            </div>
+                        </div>
+                        <div class="player-stats">
+                            <div class="stat-item">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">trending_up</span>
+                                <span>${player.points}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+                                <span>${player.wins}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">cancel</span>
+                                <span>${player.losses}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Add click handlers to player cards
+        playerCards.querySelectorAll('.player-card').forEach(card => {
+            card.addEventListener('click', function() {
+                selectDefender(this.dataset.playerId, this.dataset.playerName);
+            });
+        });
+    }
+
+    // Filter players based on search (within eligible defenders)
+    function filterPlayers(searchTerm) {
+        const eligibleDefenders = getEligibleDefenders(challengerPosition);
+        const filtered = eligibleDefenders.filter(player => 
+            player.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        renderPlayerCards(filtered);
+    }
+
+    // Select defender
+    function selectDefender(playerId, playerName) {
+        // Remove previous selection
+        playerCards.querySelectorAll('.player-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+
+        // Add selection to clicked card
+        const selectedCard = playerCards.querySelector(`[data-player-id="${playerId}"]`);
+        if (selectedCard) {
+            selectedCard.classList.add('selected');
+        }
+
+        selectedDefenderId = playerId;
+        defenderIdInput.value = playerId;
+        
+        // Update defender info display
+        document.querySelector('.defender-info h5').textContent = playerName;
+        document.querySelector('.defender-info h5').classList.remove('text-muted');
+        document.querySelector('.defender-info .material-symbols-outlined').classList.remove('text-secondary');
+        document.querySelector('.defender-info .material-symbols-outlined').classList.add('text-success');
+
+        // Enable start button
+        startChallengeBtn.disabled = false;
+        defenderError.style.display = 'none';
+    }
+
+    // Search functionality
+    defenderSearch.addEventListener('input', function() {
+        const searchTerm = this.value.trim();
+        filterPlayers(searchTerm);
+    });
+
+    // Handle challenge button clicks
+    document.querySelectorAll('.challenge-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            challengerId = this.dataset.playerId;
+            const challengerName = this.dataset.playerName;
+            
+            // Find challenger's position based on table row index
+            const challengerRow = document.querySelector(`[data-player-id="${challengerId}"]`);
+            const allRows = Array.from(document.querySelectorAll('.player-row'));
+            challengerPosition = allRows.indexOf(challengerRow) + 1; // 1-based position
+            
+            challengerIdInput.value = challengerId;
+            document.getElementById('challengerName').textContent = challengerName;
+            
+            // Reset form
+            defenderSearch.value = '';
+            selectedDefenderId = null;
+            defenderIdInput.value = '';
+            startChallengeBtn.disabled = true;
+            
+            // Reset defender info display
+            document.querySelector('.defender-info h5').textContent = 'Select Defender';
+            document.querySelector('.defender-info h5').classList.add('text-muted');
+            document.querySelector('.defender-info .material-symbols-outlined').classList.remove('text-success');
+            document.querySelector('.defender-info .material-symbols-outlined').classList.add('text-secondary');
+            
+            // Initialize and render eligible defenders only
+            initializePlayers();
+            const eligibleDefenders = getEligibleDefenders(challengerPosition);
+            renderPlayerCards(eligibleDefenders);
+        });
+    });
+
+    // Start challenge
+    startChallengeBtn.addEventListener('click', function() {
+        if (!selectedDefenderId) {
+            defenderError.style.display = 'block';
+            return;
+        }
+        
+        challengeForm.submit();
+    });
+
+    // Initialize on page load
+    initializePlayers();
+});
+</script>
 
 <!-- Finish Match Modal -->
 <div class="modal fade" id="finishMatchModal" tabindex="-1" aria-labelledby="finishMatchModalLabel" aria-hidden="true">
