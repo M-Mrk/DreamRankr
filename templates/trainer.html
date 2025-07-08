@@ -56,10 +56,6 @@
                         <div class="player-selection-container mt-3" id="playerCards" style="max-height: 300px; overflow-y: auto;">
                             <!-- Player cards will be populated here -->
                         </div>
-                        
-                        <div class="invalid-feedback d-block" id="defenderError" style="display: none !important;">
-                            Please select a defender to challenge.
-                        </div>
                     </div>
 
                     <input type="hidden" id="challenger-id" name="challenger_id">
@@ -180,7 +176,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const startChallengeBtn = document.getElementById('startChallengeBtn');
     const challengerIdInput = document.getElementById('challenger-id');
     const defenderIdInput = document.getElementById('defender-id');
-    const defenderError = document.getElementById('defenderError');
     const challengeForm = document.getElementById('challengeForm');
     
     let selectedDefenderId = null;
@@ -303,7 +298,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Enable start button
         startChallengeBtn.disabled = false;
-        defenderError.style.display = 'none';
     }
 
     // Search functionality
@@ -348,7 +342,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Start challenge
     startChallengeBtn.addEventListener('click', function() {
         if (!selectedDefenderId) {
-            defenderError.style.display = 'block';
             return;
         }
         
@@ -369,7 +362,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="finishMatchModalContent">
-                <form method="post" action="/trainer/finish_match">
+                <form method="post" action="/trainer/finish_match" id="finishMatchForm">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label for="inputChallengerSetsWon" class="form-label">Challenger Name</label>
@@ -401,11 +394,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     <input type="hidden" id="match-id" name="match_id">
                     <input type="hidden" id="winner-id" name="winner_id">
                     <input type="hidden" id="ranking-id" name="rankingId" value="{{ rankingId }}">
+                    <input type="hidden" id="cancel-match" name="cancel" value="">
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary">Finish Match</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning" id="cancelMatchBtn">
+                    <span class="material-icons me-1" style="font-size: 16px;">cancel</span>
+                    Cancel Match
+                </button>
+                <button type="button" class="btn btn-primary" id="finishMatchBtn">
+                    <span class="material-icons me-1" style="font-size: 16px;">check</span>
+                    Finish Match
+                </button>
             </div>
         </div>
     </div>

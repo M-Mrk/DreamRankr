@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, redirect, session, flash
 from flask_migrate import Migrate
 
 #Database
-from db import db, Players, PlayerBonuses, Rankings, PlayerRankings, Authentication
+from db import db, Players, PlayerBonuses, Rankings, PlayerRankings, Authentication, OnGoingMatches
 
 #DreamRankr files
 from bonuses import updateOrCreatePlayerBonus, validateBonusParameters
@@ -489,11 +489,18 @@ def finish_match():
     """
     try:
         # Extract and validate form parameters
+        
         rankingId = request.form.get('rankingId')
         matchId = request.form.get('match_id')
         winnerId = request.form.get('winner_id')
         challengerScore = request.form.get('challenger_score')
         defenderScore = request.form.get('defender_score')
+
+        if request.form.get('cancel'):
+            match = db.session.get(OnGoingMatches, matchId)
+            db.session.delete(match)
+            db.session.commit()
+            return redirect(f'/trainer/{rankingId}')
         
         # Validate required parameters
         if not rankingId or not matchId:
