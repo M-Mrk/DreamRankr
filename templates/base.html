@@ -70,11 +70,11 @@
             "
           >
             <span class="material-symbols-outlined">arrow_back</span>
-          </div>
+            </div>
             {% endif %}
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
             <img src="{{ url_for('static', filename='favicon/logoplain.svg') }}" alt="DreamRankr Logo" style="height: 45px; margin-right: 10px;">
-            DreamRankr
+            <span class="d-none d-sm-inline">DreamRankr</span>
             </a>
           {% if session['permissionLevel'] == "trainer" %}
           <span class="badge text-bg-info fs-4">Trainer</span>
