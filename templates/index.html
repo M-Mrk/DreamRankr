@@ -50,8 +50,10 @@
                 Ended
               </span>
             </div>
-            {% elif ranking.endsOn %} {% set days_left = ((ranking.endsOn -
-            now()).total_seconds() / 86400) | int %} {% if days_left >= 0 %}
+            {% elif ranking.endsOn %}
+            <!-- Use only the date part for comparison to avoid timezone issues -->
+            {% set days_left = ((ranking.endsOn.replace(tzinfo=none).date() -
+            now().replace(tzinfo=none).date()).days) %} {% if days_left >= 0 %}
             <div class="mt-2">
               <span class="badge bg-warning text-dark">
                 <span
@@ -109,35 +111,73 @@
         <div class="flex-grow-1 mx-4">
           <hr class="border-secondary" />
         </div>
-        <div class="d-none d-md-block">
-          <div class="btn-group" role="group" aria-label="Sort options">
+        <div class="d-flex align-items-center gap-2">
+          <!-- Unified Search Container -->
+          <div class="search-container d-flex align-items-center gap-2">
             <button
-              type="button"
-              class="btn btn-outline-primary active btn-sm"
-              id="sortWins"
-              onclick="sortPlayers('wins')"
+              class="btn btn-outline-secondary btn-sm"
+              id="searchToggle"
+              onclick="toggleSearch()"
             >
-              Sort by Wins
+              <span class="material-symbols-outlined" style="font-size: 1rem"
+                >search</span
+              >
             </button>
-            <button
-              type="button"
-              class="btn btn-outline-primary btn-sm"
-              id="sortWinRate"
-              onclick="sortPlayers('winRate')"
+            <div
+              class="search-input-container d-none flex-grow-1"
+              id="searchInputContainer"
             >
-              Sort by Win %
-            </button>
-            <button
-              type="button"
-              class="btn btn-outline-primary btn-sm"
-              id="sortSets"
-              onclick="sortPlayers('sets')"
-            >
-              Sort by Sets Won
-            </button>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                id="playerSearch"
+                placeholder="Search players..."
+                onkeyup="performSearch()"
+                onblur="handleSearchBlur()"
+              />
+              <button
+                class="btn btn-outline-secondary btn-sm ms-1"
+                onclick="clearSearch()"
+              >
+                <span class="material-symbols-outlined" style="font-size: 1rem"
+                  >close</span
+                >
+              </button>
+            </div>
+          </div>
+
+          <!-- Desktop sorting buttons -->
+          <div class="d-none d-md-block">
+            <div class="btn-group" role="group" aria-label="Sort options">
+              <button
+                type="button"
+                class="btn btn-outline-primary active btn-sm"
+                id="sortWins"
+                onclick="sortPlayers('wins')"
+              >
+                Sort by Wins
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                id="sortWinRate"
+                onclick="sortPlayers('winRate')"
+              >
+                Sort by Win %
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                id="sortSets"
+                onclick="sortPlayers('sets')"
+              >
+                Sort by Sets Won
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
       <!-- Mobile sorting buttons -->
       <div class="d-md-none mb-4">
         <div
@@ -177,158 +217,79 @@
     </div>
 
     {% if allPlayers and allPlayers|length > 0 %}
-    <!-- Mobile Podium for Top 3 Players -->
+    <!-- Desktop Podium (hidden on mobile) -->
     {% if allPlayers|length >= 3 %}
-    <div class="podium-container mb-4" id="podiumContainer">
-      <!-- Mobile Podium (Vertical Stack) -->
-      <div class="d-md-none">
-        <div class="row g-2">
-          <!-- First Place -->
-          <div class="col-12">
-            <div class="card border-warning bg-warning bg-opacity-10">
-              <div class="card-body text-center py-3">
-                <h5 class="mb-2">🥇 1st Place</h5>
-                <h4 class="text-warning mb-2" id="player1NameMobile">
-                  {{ allPlayers[0].name }}
-                </h4>
-                <div class="row text-center">
-                  <div class="col-4">
-                    <small class="text-muted d-block">Wins</small>
-                    <strong id="player1WinsMobile"
-                      >{{ allPlayers[0].wins }}</strong
-                    >
-                  </div>
-                  <div class="col-4">
-                    <small class="text-muted d-block">Sets</small>
-                    <strong id="player1SetsMobile"
-                      >{{ allPlayers[0].setsWon }}</strong
-                    >
-                  </div>
-                  <div class="col-4">
-                    <small class="text-muted d-block">Win %</small>
-                    <strong id="player1WinRateMobile">
-                      {% if allPlayers[0].wins and (allPlayers[0].wins +
-                      allPlayers[0].losses) > 0 %} {{
-                      "%.1f"|format((allPlayers[0].wins / (allPlayers[0].wins +
-                      allPlayers[0].losses) * 100)) }}% {% else %} N/A {% endif
-                      %}
-                    </strong>
-                  </div>
-                </div>
-              </div>
+    <div class="podium-container mb-4 d-none d-md-block" id="podiumContainer">
+      <div class="row justify-content-center align-items-end">
+        <!-- Second Place -->
+        <div class="col-md-3 text-center">
+          <div class="podium-position podium-second d-flex flex-column">
+            <div class="podium-player">
+              <h5 class="mb-1">🥈 2nd Place</h5>
+              <h4 class="text-primary" id="player2Name">
+                {{ allPlayers[1].name }}
+              </h4>
+              <p class="mb-1">
+                <strong id="player2Wins">{{ allPlayers[1].wins }}</strong>
+                wins
+              </p>
+              <p class="mb-0" id="player2WinRate">
+                {% if allPlayers[1].wins and (allPlayers[1].wins +
+                allPlayers[1].losses) > 0 %} {{
+                "%.1f"|format((allPlayers[1].wins / (allPlayers[1].wins +
+                allPlayers[1].losses) * 100)) }}% win rate {% else %} N/A win
+                rate {% endif %}
+              </p>
             </div>
-          </div>
-
-          <!-- Second and Third Place -->
-          <div class="col-6">
-            <div class="card border-primary bg-primary bg-opacity-10">
-              <div class="card-body text-center py-2">
-                <h6 class="mb-1">🥈 2nd</h6>
-                <p class="mb-1 fw-bold" id="player2NameMobile">
-                  {{ allPlayers[1].name }}
-                </p>
-                <small class="text-muted d-block"
-                  >Wins:
-                  <span id="player2WinsMobile"
-                    >{{ allPlayers[1].wins }}</span
-                  ></small
-                >
-              </div>
-            </div>
-          </div>
-
-          <div class="col-6">
-            <div class="card border-danger bg-danger bg-opacity-10">
-              <div class="card-body text-center py-2">
-                <h6 class="mb-1">🥉 3rd</h6>
-                <p class="mb-1 fw-bold" id="player3NameMobile">
-                  {{ allPlayers[2].name }}
-                </p>
-                <small class="text-muted d-block"
-                  >Wins:
-                  <span id="player3WinsMobile"
-                    >{{ allPlayers[2].wins }}</span
-                  ></small
-                >
-              </div>
-            </div>
+            <div class="podium-base podium-base-second mt-auto">2</div>
           </div>
         </div>
-      </div>
 
-      <!-- Desktop Podium (Original) -->
-      <div class="d-none d-md-block">
-        <div class="row justify-content-center align-items-end">
-          <!-- Second Place -->
-          <div class="col-md-3 text-center">
-            <div class="podium-position podium-second d-flex flex-column">
-              <div class="podium-player">
-                <h5 class="mb-1">🥈 2nd Place</h5>
-                <h4 class="text-primary" id="player2Name">
-                  {{ allPlayers[1].name }}
-                </h4>
-                <p class="mb-1">
-                  <strong id="player2Wins">{{ allPlayers[1].wins }}</strong>
-                  wins
-                </p>
-                <p class="mb-0" id="player2WinRate">
-                  {% if allPlayers[1].wins and (allPlayers[1].wins +
-                  allPlayers[1].losses) > 0 %} {{
-                  "%.1f"|format((allPlayers[1].wins / (allPlayers[1].wins +
-                  allPlayers[1].losses) * 100)) }}% win rate {% else %} N/A win
-                  rate {% endif %}
-                </p>
-              </div>
-              <div class="podium-base podium-base-second mt-auto">2</div>
+        <!-- First Place -->
+        <div class="col-md-3 text-center">
+          <div class="podium-position podium-first d-flex flex-column">
+            <div class="podium-player">
+              <h5 class="mb-1">🥇 1st Place</h5>
+              <h4 class="text-warning" id="player1Name">
+                {{ allPlayers[0].name }}
+              </h4>
+              <p class="mb-1">
+                <strong id="player1Wins">{{ allPlayers[0].wins }}</strong>
+                wins
+              </p>
+              <p class="mb-0" id="player1WinRate">
+                {% if allPlayers[0].wins and (allPlayers[0].wins +
+                allPlayers[0].losses) > 0 %} {{
+                "%.1f"|format((allPlayers[0].wins / (allPlayers[0].wins +
+                allPlayers[0].losses) * 100)) }}% win rate {% else %} N/A win
+                rate {% endif %}
+              </p>
             </div>
+            <div class="podium-base podium-base-first mt-auto">1</div>
           </div>
+        </div>
 
-          <!-- First Place -->
-          <div class="col-md-3 text-center">
-            <div class="podium-position podium-first d-flex flex-column">
-              <div class="podium-player">
-                <h5 class="mb-1">🥇 1st Place</h5>
-                <h4 class="text-warning" id="player1Name">
-                  {{ allPlayers[0].name }}
-                </h4>
-                <p class="mb-1">
-                  <strong id="player1Wins">{{ allPlayers[0].wins }}</strong>
-                  wins
-                </p>
-                <p class="mb-0" id="player1WinRate">
-                  {% if allPlayers[0].wins and (allPlayers[0].wins +
-                  allPlayers[0].losses) > 0 %} {{
-                  "%.1f"|format((allPlayers[0].wins / (allPlayers[0].wins +
-                  allPlayers[0].losses) * 100)) }}% win rate {% else %} N/A win
-                  rate {% endif %}
-                </p>
-              </div>
-              <div class="podium-base podium-base-first mt-auto">1</div>
+        <!-- Third Place -->
+        <div class="col-md-3 text-center">
+          <div class="podium-position podium-third d-flex flex-column">
+            <div class="podium-player">
+              <h5 class="mb-1">🥉 3rd Place</h5>
+              <h4 class="text-danger" id="player3Name">
+                {{ allPlayers[2].name }}
+              </h4>
+              <p class="mb-1">
+                <strong id="player3Wins">{{ allPlayers[2].wins }}</strong>
+                wins
+              </p>
+              <p class="mb-0" id="player3WinRate">
+                {% if allPlayers[2].wins and (allPlayers[2].wins +
+                allPlayers[2].losses) > 0 %} {{
+                "%.1f"|format((allPlayers[2].wins / (allPlayers[2].wins +
+                allPlayers[2].losses) * 100)) }}% win rate {% else %} N/A win
+                rate {% endif %}
+              </p>
             </div>
-          </div>
-
-          <!-- Third Place -->
-          <div class="col-md-3 text-center">
-            <div class="podium-position podium-third d-flex flex-column">
-              <div class="podium-player">
-                <h5 class="mb-1">🥉 3rd Place</h5>
-                <h4 class="text-danger" id="player3Name">
-                  {{ allPlayers[2].name }}
-                </h4>
-                <p class="mb-1">
-                  <strong id="player3Wins">{{ allPlayers[2].wins }}</strong>
-                  wins
-                </p>
-                <p class="mb-0" id="player3WinRate">
-                  {% if allPlayers[2].wins and (allPlayers[2].wins +
-                  allPlayers[2].losses) > 0 %} {{
-                  "%.1f"|format((allPlayers[2].wins / (allPlayers[2].wins +
-                  allPlayers[2].losses) * 100)) }}% win rate {% else %} N/A win
-                  rate {% endif %}
-                </p>
-              </div>
-              <div class="podium-base podium-base-third mt-auto">3</div>
-            </div>
+            <div class="podium-base podium-base-third mt-auto">3</div>
           </div>
         </div>
       </div>
@@ -337,36 +298,108 @@
 
     <!-- Mobile Player Cards (replaces table on mobile) -->
     <div class="d-block d-md-none" id="mobilePlayersList">
-      <div class="row g-2" id="mobilePlayersContainer">
+      <div class="player-cards" id="mobilePlayersContainer">
         {% for player in allPlayers %}
-        <div class="col-12">
-          <div class="card {% if loop.index <= 3 %}border-warning{% endif %}">
-            <div class="card-body py-3">
+        <div class="player-card mb-2">
+          <div class="card">
+            <div class="card-body py-2">
               <div class="row align-items-center">
+                <!-- Position/Ranking -->
                 <div class="col-2 text-center">
-                  <span class="fs-4">
-                    {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {%
-                    elif loop.index == 3 %}🥉 {% else %}{{ loop.index }} {%
-                    endif %}
-                  </span>
-                </div>
-                <div class="col-6">
-                  <h6 class="mb-1">{{ player.name }}</h6>
-                  <small class="text-muted">
-                    {% if player.wins and (player.wins + player.losses) > 0 %}
-                    {{ "%.1f"|format((player.wins / (player.wins +
-                    player.losses) * 100)) }}% win rate {% else %} N/A win rate
-                    {% endif %}
-                  </small>
-                </div>
-                <div class="col-4 text-end">
-                  <div class="small">
-                    <div>
-                      <strong>{{ player.wins }}</strong>W -
-                      <strong>{{ player.losses }}</strong>L
+                  <div class="position-badge">
+                    <span class="position-number">{{ loop.index }}</span>
+                    {% if loop.index <= 3 %}
+                    <div class="position-icon">
+                      {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {%
+                      elif loop.index == 3 %}🥉 {% endif %}
                     </div>
-                    <div class="text-muted">
-                      Sets: {{ player.setsWon }}-{{ player.setsLost }}
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Player Info -->
+                <div class="col-10">
+                  <div class="row align-items-center">
+                    <div class="col-12 col-sm-6">
+                      <h6 class="player-name mb-0">{{ player.name }}</h6>
+                    </div>
+
+                    <!-- Stats Grid - Compact -->
+                    <div class="col-12 col-sm-6">
+                      <div class="stats-grid-compact">
+                        <div class="stat-item-compact">
+                          <span
+                            class="material-icons text-success"
+                            style="font-size: 14px"
+                            >check_circle</span
+                          >
+                          <div class="stat-content">
+                            <span class="stat-value-compact"
+                              >{{ player.wins }}</span
+                            >
+                            <small class="stat-label-compact">W</small>
+                          </div>
+                        </div>
+                        <div class="stat-item-compact">
+                          <span
+                            class="material-icons text-danger"
+                            style="font-size: 14px"
+                            >cancel</span
+                          >
+                          <div class="stat-content">
+                            <span class="stat-value-compact"
+                              >{{ player.losses }}</span
+                            >
+                            <small class="stat-label-compact">L</small>
+                          </div>
+                        </div>
+                        <div class="stat-item-compact">
+                          <span
+                            class="material-icons text-info"
+                            style="font-size: 14px"
+                            >percent</span
+                          >
+                          <div class="stat-content">
+                            <span class="stat-value-compact">
+                              {% if player.wins and (player.wins +
+                              player.losses) > 0 %} {{
+                              "%.0f"|format((player.wins / (player.wins +
+                              player.losses) * 100)) }}% {% else %} N/A {% endif
+                              %}
+                            </span>
+                            <small class="stat-label-compact">WR</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Expandable Additional Stats -->
+                  <div class="additional-stats mt-1">
+                    <button
+                      class="btn btn-sm btn-link p-0 text-decoration-none"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#stats-{{ loop.index }}"
+                      aria-expanded="false"
+                      style="font-size: 0.75rem"
+                    >
+                      <span class="material-icons me-1" style="font-size: 12px"
+                        >expand_more</span
+                      >
+                      More
+                    </button>
+                    <div class="collapse mt-1" id="stats-{{ loop.index }}">
+                      <div class="row text-center" style="font-size: 0.8rem">
+                        <div class="col-6">
+                          <small class="text-muted d-block">Sets Won</small>
+                          <strong>{{ player.setsWon }}</strong>
+                        </div>
+                        <div class="col-6">
+                          <small class="text-muted d-block">Sets Lost</small>
+                          <strong>{{ player.setsLost }}</strong>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -394,7 +427,7 @@
         </thead>
         <tbody id="playersTableBody">
           {% for player in allPlayers %}
-          <tr {% if loop.index <= 3 %}class="table-warning" {% endif %}>
+          <tr {% if loop.index <="3" %}class="table-warning" {% endif %}>
             <td>
               {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
               loop.index == 3 %}🥉 {% else %}{{ loop.index }} {% endif %}
@@ -423,6 +456,209 @@
   </div>
 </div>
 
+<style>
+  /* Player Cards Styling - Compact */
+  .player-card {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .player-card:hover {
+    transform: translateY(-1px);
+  }
+
+  .player-card .card {
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+  }
+
+  /* Top 3 special styling */
+  .player-card:nth-child(1) .card {
+    border-left: 3px solid #ffc107;
+    background: linear-gradient(135deg, #fff9c4 0%, #ffffff 100%);
+  }
+
+  .player-card:nth-child(2) .card {
+    border-left: 3px solid #6c757d;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  }
+
+  .player-card:nth-child(3) .card {
+    border-left: 3px solid #dc3545;
+    background: linear-gradient(135deg, #f8d7da 0%, #ffffff 100%);
+  }
+
+  /* Position Badge - Compact */
+  .position-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .position-number {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #495057;
+    line-height: 1;
+  }
+
+  .position-icon {
+    font-size: 1rem;
+    margin-top: 1px;
+  }
+
+  /* Player Name - Compact */
+  .player-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #212529;
+    line-height: 1.2;
+  }
+
+  /* Stats Grid - Compact */
+  .stats-grid-compact {
+    display: flex;
+    justify-content: space-around;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .stat-item-compact {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    background: rgba(108, 117, 125, 0.1);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .stat-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .stat-value-compact {
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .stat-label-compact {
+    font-size: 0.65rem;
+    color: #6c757d;
+    line-height: 1;
+    margin-top: 1px;
+  }
+
+  /* Additional Stats */
+  .additional-stats .btn {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+
+  /* Search Container Styling */
+  .search-container {
+    position: relative;
+  }
+
+  .search-input-container {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .search-input-container input {
+    width: 200px;
+    transition: all 0.3s ease;
+  }
+
+  .search-input-container input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Mobile search adjustments */
+  @media (max-width: 767px) {
+    .search-input-container input {
+      width: 100%;
+      min-width: 150px;
+    }
+  }
+
+  /* Search highlight */
+  .search-highlight {
+    background-color: #fff3cd;
+    padding: 1px 2px;
+    border-radius: 2px;
+    font-weight: bold;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 576px) {
+    .stats-grid-compact {
+      gap: 4px;
+    }
+
+    .stat-item-compact {
+      padding: 2px 4px;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-content {
+      align-items: center;
+    }
+
+    .stat-value-compact {
+      font-size: 0.8rem;
+    }
+
+    .stat-label-compact {
+      font-size: 0.6rem;
+    }
+
+    .position-number {
+      font-size: 1.1rem;
+    }
+
+    .player-name {
+      font-size: 0.9rem;
+    }
+
+    .card-body {
+      padding: 8px 12px !important;
+    }
+  }
+
+  /* Animation for new entries */
+  .player-card {
+    animation: slideInUp 0.3s ease-out;
+  }
+
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
 <script>
   // Store original player data
   const playersData = [
@@ -438,8 +674,80 @@
       {% endfor %}
   ];
 
+  let currentSearchTerm = '';
+  let currentSortBy = 'wins';
+  let searchTimeout;
+
+  function toggleSearch() {
+    const searchToggle = document.getElementById('searchToggle');
+    const searchInputContainer = document.getElementById('searchInputContainer');
+    const searchInput = document.getElementById('playerSearch');
+
+    if (searchInputContainer.classList.contains('d-none')) {
+      searchInputContainer.classList.remove('d-none');
+      searchToggle.classList.add('d-none');
+      searchInput.focus();
+    }
+  }
+
+  function clearSearch() {
+    const searchToggle = document.getElementById('searchToggle');
+    const searchInputContainer = document.getElementById('searchInputContainer');
+    const searchInput = document.getElementById('playerSearch');
+
+    searchInput.value = '';
+    searchInputContainer.classList.add('d-none');
+    searchToggle.classList.remove('d-none');
+    currentSearchTerm = '';
+    performSearch();
+  }
+
+  function performSearch() {
+    const searchInput = document.getElementById('playerSearch');
+    const searchInputContainer = document.getElementById('searchInputContainer');
+
+    // Stop searching if the search bar is closed or empty
+    if (searchInputContainer.classList.contains('d-none') || !searchInput.value.trim()) {
+      currentSearchTerm = '';
+      updateTable(playersData);
+      updateMobileCards(playersData);
+      return;
+    }
+
+    currentSearchTerm = searchInput.value.toLowerCase().trim();
+    const filteredPlayers = playersData.filter(player =>
+      player.name.toLowerCase().includes(currentSearchTerm)
+    );
+
+    sortFilteredPlayers(filteredPlayers);
+    updateTable(filteredPlayers);
+    updateMobileCards(filteredPlayers);
+  }
+
+  function handleSearchBlur() {
+    const searchInputContainer = document.getElementById('searchInputContainer');
+    const searchInput = document.getElementById('playerSearch');
+
+    if (!searchInput.value.trim()) {
+      searchInputContainer.classList.add('d-none');
+      document.getElementById('searchToggle').classList.remove('d-none');
+    }
+  }
+
+  function sortFilteredPlayers(players) {
+      if (currentSortBy === 'wins') {
+          players.sort((a, b) => b.wins - a.wins);
+      } else if (currentSortBy === 'winRate') {
+          players.sort((a, b) => b.winRate - a.winRate);
+      } else if (currentSortBy === 'sets') {
+          players.sort((a, b) => b.setsWon - a.setsWon);
+      }
+  }
+
   function sortPlayers(sortBy) {
-      // Remove active class from all buttons (both mobile and desktop)
+      currentSortBy = sortBy;
+
+      // Remove active class from all buttons
       document.querySelectorAll('.btn-group .btn, .btn-group-vertical .btn').forEach(btn => btn.classList.remove('active'));
 
       // Add active class to clicked button
@@ -454,59 +762,37 @@
           document.getElementById('sortSetsMobile')?.classList.add('active');
       }
 
-      // Sort the data
-      let sortedPlayers = [...playersData];
-
-      if (sortBy === 'wins') {
-          sortedPlayers.sort((a, b) => b.wins - a.wins);
-      } else if (sortBy === 'winRate') {
-          sortedPlayers.sort((a, b) => b.winRate - a.winRate);
-      } else if (sortBy === 'sets') {
-          sortedPlayers.sort((a, b) => b.setsWon - a.setsWon);
-      }
-
-      // Update podium if there are at least 3 players
-      if (sortedPlayers.length >= 3) {
-          updatePodium(sortedPlayers);
-          updateMobilePodium(sortedPlayers);
-      }
-
-      // Update both table and mobile cards
-      updateTable(sortedPlayers);
-      updateMobileCards(sortedPlayers);
+      // Apply search and sort
+      performSearch();
   }
 
   function updatePodium(players) {
-      // Update desktop podium
-      document.getElementById('player1Name').textContent = players[0].name;
-      document.getElementById('player1Wins').textContent = players[0].wins;
-      document.getElementById('player1WinRate').textContent = players[0].winRate > 0 ?
+      const player1Name = document.getElementById('player1Name');
+      const player1Wins = document.getElementById('player1Wins');
+      const player1WinRate = document.getElementById('player1WinRate');
+
+      const player2Name = document.getElementById('player2Name');
+      const player2Wins = document.getElementById('player2Wins');
+      const player2WinRate = document.getElementById('player2WinRate');
+
+      const player3Name = document.getElementById('player3Name');
+      const player3Wins = document.getElementById('player3Wins');
+      const player3WinRate = document.getElementById('player3WinRate');
+
+      if (player1Name) player1Name.textContent = players[0].name;
+      if (player1Wins) player1Wins.textContent = players[0].wins;
+      if (player1WinRate) player1WinRate.textContent = players[0].winRate > 0 ?
           players[0].winRate.toFixed(1) + '% win rate' : 'N/A win rate';
 
-      document.getElementById('player2Name').textContent = players[1].name;
-      document.getElementById('player2Wins').textContent = players[1].wins;
-      document.getElementById('player2WinRate').textContent = players[1].winRate > 0 ?
+      if (player2Name) player2Name.textContent = players[1].name;
+      if (player2Wins) player2Wins.textContent = players[1].wins;
+      if (player2WinRate) player2WinRate.textContent = players[1].winRate > 0 ?
           players[1].winRate.toFixed(1) + '% win rate' : 'N/A win rate';
 
-      document.getElementById('player3Name').textContent = players[2].name;
-      document.getElementById('player3Wins').textContent = players[2].wins;
-      document.getElementById('player3WinRate').textContent = players[2].winRate > 0 ?
+      if (player3Name) player3Name.textContent = players[2].name;
+      if (player3Wins) player3Wins.textContent = players[2].wins;
+      if (player3WinRate) player3WinRate.textContent = players[2].winRate > 0 ?
           players[2].winRate.toFixed(1) + '% win rate' : 'N/A win rate';
-  }
-
-  function updateMobilePodium(players) {
-      // Update mobile podium
-      document.getElementById('player1NameMobile').textContent = players[0].name;
-      document.getElementById('player1WinsMobile').textContent = players[0].wins;
-      document.getElementById('player1SetsMobile').textContent = players[0].setsWon;
-      document.getElementById('player1WinRateMobile').textContent = players[0].winRate > 0 ?
-          players[0].winRate.toFixed(1) + '%' : 'N/A';
-
-      document.getElementById('player2NameMobile').textContent = players[1].name;
-      document.getElementById('player2WinsMobile').textContent = players[1].wins;
-
-      document.getElementById('player3NameMobile').textContent = players[2].name;
-      document.getElementById('player3WinsMobile').textContent = players[2].wins;
   }
 
   function updateTable(players) {
@@ -514,6 +800,19 @@
       if (!tbody) return;
 
       tbody.innerHTML = '';
+
+      if (players.length === 0) {
+          tbody.innerHTML = `
+              <tr>
+                  <td colspan="7" class="text-center py-4">
+                      <span class="material-symbols-outlined mb-2 d-block" style="font-size: 3rem; color: #6c757d;">search_off</span>
+                      <h5>No players found</h5>
+                      <p class="mb-0">Try adjusting your search terms</p>
+                  </td>
+              </tr>
+          `;
+          return;
+      }
 
       players.forEach((player, index) => {
           const row = document.createElement('tr');
@@ -529,9 +828,16 @@
 
           const winRateDisplay = player.winRate > 0 ? player.winRate.toFixed(1) + '%' : 'N/A';
 
+          // Highlight search term in player name
+          let highlightedName = player.name;
+          if (currentSearchTerm) {
+              const regex = new RegExp(`(${currentSearchTerm})`, 'gi');
+              highlightedName = player.name.replace(regex, '<span class="search-highlight">$1</span>');
+          }
+
           row.innerHTML = `
               <td>${rankIcon}</td>
-              <td><strong>${player.name}</strong></td>
+              <td><strong>${highlightedName}</strong></td>
               <td>${player.wins}</td>
               <td>${player.losses}</td>
               <td>${winRateDisplay}</td>
@@ -549,32 +855,97 @@
 
       container.innerHTML = '';
 
+      if (players.length === 0) {
+          container.innerHTML = `
+              <div class="text-center py-4">
+                  <span class="material-symbols-outlined mb-2 d-block" style="font-size: 3rem; color: #6c757d;">search_off</span>
+                  <h5>No players found</h5>
+                  <p class="mb-0">Try adjusting your search terms</p>
+              </div>
+          `;
+          return;
+      }
+
       players.forEach((player, index) => {
           let rankIcon;
           if (index === 0) rankIcon = '🥇';
           else if (index === 1) rankIcon = '🥈';
           else if (index === 2) rankIcon = '🥉';
-          else rankIcon = index + 1;
+          else rankIcon = '';
 
-          const winRateDisplay = player.winRate > 0 ? player.winRate.toFixed(1) + '% win rate' : 'N/A win rate';
-          const borderClass = index < 3 ? 'border-warning' : '';
+          const winRateDisplay = player.winRate > 0 ? player.winRate.toFixed(0) + '%' : 'N/A';
 
-          const cardHTML = `
-              <div class="col-12">
-                  <div class="card ${borderClass}">
-                      <div class="card-body py-3">
-                          <div class="row align-items-center">
-                              <div class="col-2 text-center">
-                                  <span class="fs-4">${rankIcon}</span>
+          // Highlight search term in player name
+          let highlightedName = player.name;
+          if (currentSearchTerm) {
+              const regex = new RegExp(`(${currentSearchTerm})`, 'gi');
+              highlightedName = player.name.replace(regex, '<span class="search-highlight">$1</span>');
+          }
+
+          const playerCard = document.createElement('div');
+          playerCard.className = 'player-card mb-2';
+          playerCard.innerHTML = `
+              <div class="card">
+                  <div class="card-body py-2">
+                      <div class="row align-items-center">
+                          <div class="col-2 text-center">
+                              <div class="position-badge">
+                                  <span class="position-number">${index + 1}</span>
+                                  ${rankIcon ? `<div class="position-icon">${rankIcon}</div>` : ''}
                               </div>
-                              <div class="col-6">
-                                  <h6 class="mb-1">${player.name}</h6>
-                                  <small class="text-muted">${winRateDisplay}</small>
+                          </div>
+                          <div class="col-10">
+                              <div class="row align-items-center">
+                                  <div class="col-12 col-sm-6">
+                                      <h6 class="player-name mb-0">${highlightedName}</h6>
+                                  </div>
+                                  <div class="col-12 col-sm-6">
+                                      <div class="stats-grid-compact">
+                                          <div class="stat-item-compact">
+                                              <span class="material-icons text-success" style="font-size: 14px;">check_circle</span>
+                                              <div class="stat-content">
+                                                  <span class="stat-value-compact">${player.wins}</span>
+                                                  <small class="stat-label-compact">W</small>
+                                              </div>
+                                          </div>
+                                          <div class="stat-item-compact">
+                                              <span class="material-icons text-danger" style="font-size: 14px;">cancel</span>
+                                              <div class="stat-content">
+                                                  <span class="stat-value-compact">${player.losses}</span>
+                                                  <small class="stat-label-compact">L</small>
+                                              </div>
+                                          </div>
+                                          <div class="stat-item-compact">
+                                              <span class="material-icons text-info" style="font-size: 14px;">percent</span>
+                                              <div class="stat-content">
+                                                  <span class="stat-value-compact">${winRateDisplay}</span>
+                                                  <small class="stat-label-compact">WR</small>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </div>
                               </div>
-                              <div class="col-4 text-end">
-                                  <div class="small">
-                                      <div><strong>${player.wins}</strong>W - <strong>${player.losses}</strong>L</div>
-                                      <div class="text-muted">Sets: ${player.setsWon}-${player.setsLost}</div>
+                              <div class="additional-stats mt-1">
+                                  <button class="btn btn-sm btn-link p-0 text-decoration-none"
+                                          type="button"
+                                          data-bs-toggle="collapse"
+                                          data-bs-target="#stats-${index + 1}"
+                                          aria-expanded="false"
+                                          style="font-size: 0.75rem;">
+                                      <span class="material-icons me-1" style="font-size: 12px;">expand_more</span>
+                                      More
+                                  </button>
+                                  <div class="collapse mt-1" id="stats-${index + 1}">
+                                      <div class="row text-center" style="font-size: 0.8rem;">
+                                          <div class="col-6">
+                                              <small class="text-muted d-block">Sets Won</small>
+                                              <strong>${player.setsWon}</strong>
+                                          </div>
+                                          <div class="col-6">
+                                              <small class="text-muted d-block">Sets Lost</small>
+                                              <strong>${player.setsLost}</strong>
+                                          </div>
+                                      </div>
                                   </div>
                               </div>
                           </div>
@@ -583,8 +954,14 @@
               </div>
           `;
 
-          container.innerHTML += cardHTML;
+          container.appendChild(playerCard);
       });
   }
+
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', function() {
+      // Ensure initial state is correct
+      performSearch();
+  });
 </script>
 {% endblock %}

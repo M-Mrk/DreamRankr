@@ -188,11 +188,12 @@ def updatePoints(player, rankingId, won):
             
         # Award points based on match outcome
         points_to_add = 2 if won else 1
-        old_points = playerRanking.points or 0
-        playerRanking.points = old_points + points_to_add
+        oldPoints = playerRanking.points or 0
+        playerRanking.lastPoints = oldPoints
+        playerRanking.points = oldPoints + points_to_add
         
         log(1, "updatePoints", 
-            f"Player {getattr(player, 'name', 'Unknown')} points updated from {old_points} to {playerRanking.points} "
+            f"Player {getattr(player, 'name', 'Unknown')} points updated from {oldPoints} to {playerRanking.points} "
             f"in ranking {rankingId} ({'won' if won else 'participated'})")
             
     except Exception as e:

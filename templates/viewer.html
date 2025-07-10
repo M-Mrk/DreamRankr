@@ -391,24 +391,53 @@
               <div class="col-12 col-sm-6">
                 <div class="d-flex align-items-center">
                   <h6 class="player-name mb-0 me-2">
-                    <!-- Ranking change indicator -->
-                    {% if player.lastRanking and player.lastRankingChanged %} {%
-                    set hours_since_change = (now() -
-                    player.lastRankingChanged).total_seconds() / 3600 %} {% if
-                    hours_since_change <= 12 %} {% if player.lastRanking <
-                    player.ranking %}
-                    <span class="badge bg-danger me-1" style="font-size: 10px">
-                      <span class="material-icons" style="font-size: 12px"
-                        >trending_down</span
-                      >
-                    </span>
-                    {% elif player.lastRanking > player.ranking %}
-                    <span class="badge bg-success me-1" style="font-size: 10px">
-                      <span class="material-icons" style="font-size: 12px"
-                        >trending_up</span
-                      >
-                    </span>
-                    {% endif %} {% endif %} {% endif %} {{ player.name }}
+                    <!-- Ranking change indicator with enhanced debugging -->
+                    {% if player.lastRanking is not none and player.lastRankingChanged is not none %}
+                      {% set hours_since_change = (now() - player.lastRankingChanged).total_seconds() / 3600 %}
+                      <!-- Remove debug info in production -->
+                      <!-- 
+                      <small class="text-warning d-block" style="font-size: 0.6rem;">
+                        Hours since change: {{ "%.1f"|format(hours_since_change) }}
+                      </small>
+                      -->
+                      {% if hours_since_change <= 12 %}
+                        {% if ranking.sortedBy == "standard" %}
+                          <!-- For standard ranking: lower number = better position -->
+                          {% if player.lastRanking > player.ranking %}
+                            <span class="badge bg-success me-1" style="font-size: 10px" title="Moved up from position {{ player.lastRanking }} to {{ player.ranking }}">
+                              <span class="material-icons" style="font-size: 12px">trending_up</span>
+                            </span>
+                          {% elif player.lastRanking < player.ranking %}
+                            <span class="badge bg-danger me-1" style="font-size: 10px" title="Moved down from position {{ player.lastRanking }} to {{ player.ranking }}">
+                              <span class="material-icons" style="font-size: 12px">trending_down</span>
+                            </span>
+                          {% endif %}
+                        {% else %}
+                          <!-- For points ranking: higher points = better position -->
+                          {% if player.lastPoints is defined and player.lastPoints is not none %}
+                            {% if player.points > player.lastPoints %}
+                              <span class="badge bg-success me-1" style="font-size: 10px" title="Points increased from {{ player.lastPoints }} to {{ player.points }}">
+                                <span class="material-icons" style="font-size: 12px">trending_up</span>
+                              </span>
+                            {% elif player.points < player.lastPoints %}
+                              <span class="badge bg-danger me-1" style="font-size: 10px" title="Points decreased from {{ player.lastPoints }} to {{ player.points }}">
+                                <span class="material-icons" style="font-size: 12px">trending_down</span>
+                              </span>
+                            {% endif %}
+                          {% endif %}
+                        {% endif %}
+                      {% endif %}
+                    {% endif %}
+                    {{ player.name }}
+                    
+                    <!-- Remove debug info in production -->
+                    
+                    {% if player.lastRanking is not none %}
+                      <small class="text-muted d-block" style="font-size: 0.6rem;">
+                        (Last: {{ player.lastRanking }}, Current: {{ player.ranking if ranking.sortedBy == "standard" else loop.index }}, Changed: {{ player.lastRankingChanged }})
+                      </small>
+                    {% endif %}
+                   
                   </h6>
 
                   <!-- Points (only show if ranked by points) - inline -->

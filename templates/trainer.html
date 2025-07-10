@@ -348,6 +348,44 @@ document.addEventListener('DOMContentLoaded', function() {
         challengeForm.submit();
     });
 
+    // Handle cancel match button
+    document.getElementById('cancelMatchBtn').addEventListener('click', function() {
+        const matchId = document.getElementById('match-id').value;
+        const cancelInput = document.getElementById('cancel-match');
+        const finishMatchForm = document.getElementById('finishMatchForm');
+        
+        // Set the cancel flag
+        cancelInput.value = 'true';
+        
+        // Submit the form
+        finishMatchForm.submit();
+    });
+
+    // Also update the finish match modal setup to populate the match data
+    document.querySelectorAll('[data-bs-target="#finishMatchModal"]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const matchId = this.dataset.matchId;
+            const challengerName = this.dataset.challengerName;
+            const defenderName = this.dataset.defenderName;
+            const challengerId = this.dataset.challengerId;
+            const defenderId = this.dataset.defenderId;
+            
+            // Update modal content
+            document.getElementById('match-id').value = matchId;
+            document.querySelector('label[for="inputChallengerSetsWon"]').textContent = challengerName;
+            document.querySelector('label[for="inputDefenderSetsWon"]').textContent = defenderName;
+            
+            // Reset form
+            document.getElementById('inputChallengerSetsWon').value = '';
+            document.getElementById('inputDefenderSetsWon').value = '';
+            document.getElementById('challengerWonCheckbox').checked = false;
+            document.getElementById('defenderWonCheckbox').checked = false;
+            document.getElementById('cancel-match').value = '';
+            document.getElementById('winner-id').value = '';
+            document.getElementById('finishMatchBtn').disabled = false;
+        });
+    });
+
     // Initialize on page load
     initializePlayers();
 });

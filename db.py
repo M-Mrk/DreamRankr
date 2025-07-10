@@ -42,6 +42,7 @@ class PlayerRankings(db.Model):
     rankingId = db.Column(db.Integer, db.ForeignKey('rankings.id'), nullable=False)
     ranking = db.Column(db.Integer, nullable=False)                    # Current position in this ranking
     lastRanking = db.Column(db.Integer, nullable=True)                 # Previous position for change tracking
+    lastPoints = db.Column(db.Integer, nullable=True)
     lastRankingChanged = db.Column(db.DateTime, nullable=True)         # When the ranking position last changed
     points = db.Column(db.Integer, nullable=False)                     # Points earned in this ranking
     __table_args__ = (
