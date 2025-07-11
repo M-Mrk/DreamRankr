@@ -265,6 +265,9 @@ def startListTrainer():
         sortedBy = request.form.get('sortedBy')
         endsOnDate = request.form.get('endsOnDate')
         endsOnTime = request.form.get('endsOnTime')
+        
+        end_datetime_utc = None
+        
         if isTournament and typeOfTournament:
             #Do something
             print("")
