@@ -427,7 +427,7 @@
         </thead>
         <tbody id="playersTableBody">
           {% for player in allPlayers %}
-          <tr {% if loop.index <="3" %}class="table-warning" {% endif %}>
+          <tr {% if loop.index <= 3 %}class="table-warning" {% endif %}>
             <td>
               {% if loop.index == 1 %}🥇 {% elif loop.index == 2 %}🥈 {% elif
               loop.index == 3 %}🥉 {% else %}{{ loop.index }} {% endif %}

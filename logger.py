@@ -68,14 +68,12 @@ def log(level, origin, message):
         return
         
     try:
-        # Create new log entry with standardized identifiers
         new_LogEntry = LogEntries(
             level=getLevelIdentifier(level),
             origin=getOriginIdentifier(origin),
             message=str(message)  # Ensure message is string
         )
         
-        # Attempt to save to database
         db.session.add(new_LogEntry)
         db.session.commit()
         

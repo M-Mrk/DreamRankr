@@ -19,7 +19,6 @@ def checkIfWinnerIsLower(winner, loser, rankingId):
         Exception: Logs error if ranking information cannot be retrieved
     """
     try:
-        # Get ranking positions for both players in the specific ranking
         winner_ranking = PlayerRankings.query.filter_by(playerId=winner.id, rankingId=rankingId).first()
         loser_ranking = PlayerRankings.query.filter_by(playerId=loser.id, rankingId=rankingId).first()
         
@@ -56,7 +55,6 @@ def rankPlayerUp(player, rankingId):
         Exception: Logs error if ranking update fails
     """
     try:
-        # Get current player's ranking information
         playerRanking = PlayerRankings.query.filter_by(playerId=player.id, rankingId=rankingId).first()
         if not playerRanking:
             log(3, "rankPlayerUp", f"Player ranking not found for player {player.id} in ranking {rankingId}")
@@ -77,7 +75,6 @@ def rankPlayerUp(player, rankingId):
                 f"No player found at ranking {newRanking} in rankingId {rankingId}")
             return
         
-        # Get the other player's information for logging
         otherPlayer = Players.query.filter_by(id=otherPlayerRanking.playerId).first()
         if not otherPlayer:
             log(3, "rankPlayerUp", 
@@ -148,7 +145,6 @@ def increaseWinsLosses(winner, loser):
             log(3, "increaseWinsLosses", "Winner or loser object is None")
             return
             
-        # Update win/loss counts
         winner.wins = (winner.wins or 0) + 1
         loser.losses = (loser.losses or 0) + 1
         
@@ -264,7 +260,6 @@ def changeStats(winnerId, loserId, winnerSetsWon, loserSetsWon, rankingId):
             log(3, "changeStats", f"Invalid parameters - winnerId: {winnerId}, loserId: {loserId}, rankingId: {rankingId}")
             return
             
-        # Get player objects
         winner = db.session.get(Players, winnerId)
         loser = db.session.get(Players, loserId)
         
@@ -294,7 +289,6 @@ def changeStats(winnerId, loserId, winnerSetsWon, loserSetsWon, rankingId):
             changeSetStats(winner, winnerSetsWon, loserSetsWon)
             changeSetStats(loser, loserSetsWon, winnerSetsWon)
         
-        # Commit all changes
         db.session.commit()
         log(1, "changeStats", f"Successfully updated all stats for match between {winner.name} and {loser.name}")
         

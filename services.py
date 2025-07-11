@@ -281,11 +281,9 @@ def deleteMatchesByPlayer(playerId):
             log(1, "deleteMatchesByPlayer", f"No ongoing matches found for player {player.name}({playerId})")
             return True
             
-        # Delete challenger matches
         for match in challengerMatches:
             db.session.delete(match)
             
-        # Delete defender matches  
         for match in defenderMatches:
             db.session.delete(match)
             
@@ -369,7 +367,6 @@ def endMatch(matchId, rankingId, winnerId, challengerScore, defenderScore):
             log(3, "endMatch", f"Challenger or defender does not exist for match {matchId}")
             return
 
-        # Initialize variables
         winner = None
         loserId = None
         winnerSetsWon = None

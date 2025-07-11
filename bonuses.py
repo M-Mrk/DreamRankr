@@ -87,15 +87,12 @@ def getBonus(match):
             log(3, 'getBonus', "Match object is None")
             return Bonus()
             
-        # Get bonus entries for both players
         challengerBonusEntry = PlayerBonuses.query.filter_by(playerId=match.challengerId).first()
         defenderBonusEntry = PlayerBonuses.query.filter_by(playerId=match.defenderId).first()
         
-        # Initialize bonus amounts
         challengerBonus = 0
         defenderBonus = 0
 
-        # Get ranking information for both players in this specific ranking
         challengerRanking = PlayerRankings.query.filter_by(
             playerId=match.challengerId, 
             rankingId=match.rankingId
@@ -178,14 +175,12 @@ def updateOrCreatePlayerBonus(playerId, bonus, logicOperator, limitRanking):
         existing_bonus = PlayerBonuses.query.filter_by(playerId=playerId).first()
         
         if existing_bonus:
-            # Update existing bonus
             existing_bonus.bonus = int(bonus)
             existing_bonus.logicOperator = logicOperator
             existing_bonus.limitRanking = int(limitRanking)
             log(1, "updateOrCreatePlayerBonus", 
                 f"Updated bonus for player {player.name}({player.id}): {bonus} {logicOperator} {limitRanking}")
         else:
-            # Create new bonus entry
             new_bonus = PlayerBonuses(
                 playerId=int(playerId),
                 bonus=int(bonus),
@@ -196,7 +191,6 @@ def updateOrCreatePlayerBonus(playerId, bonus, logicOperator, limitRanking):
             log(1, "updateOrCreatePlayerBonus", 
                 f"Created bonus for player {player.name}({player.id}): {bonus} {logicOperator} {limitRanking}")
         
-        # Commit changes to database
         db.session.commit()
         return True
         

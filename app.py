@@ -31,6 +31,7 @@ load_dotenv()
 # that don't explicitly specify a timezone (like date/time form inputs)
 LOCAL_TIMEZONE = os.environ.get('LOCAL_TIMEZONE')
 
+#check and get timezone
 try:
     LOCAL_TZ = zoneinfo.ZoneInfo(LOCAL_TIMEZONE)
 except:
@@ -47,7 +48,6 @@ except:
         except Exception as e:
             LOCAL_TZ = None
             print(f"Invalid timezone key: {inputKey}. Error: {e}, please try again")
-
 
 def get_local_timezone():
     """Returns the configured local timezone for the application"""
@@ -84,7 +84,6 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Main.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# For secret key:
 app.secret_key = os.environ.get('SECRET_KEY')
 if not app.secret_key:
     secret_key = os.urandom(24).hex()
@@ -94,11 +93,8 @@ if not app.secret_key:
 
 app.permanent_session_lifetime = timedelta(days=14)  # 30 minute timeout
 
-# Initialize database and migration support
 db.init_app(app)
 migrate = Migrate(app, db)
-
-# Add datetime utility to Jinja template globals for use in templates
 app.jinja_env.globals['now'] = datetime.utcnow
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -210,11 +206,9 @@ def trainer(rankingId):
         Exception: Logs error if ranking data cannot be retrieved
     """
     try:
-        # Get players in the ranking with their bonus information
         players = getPlayersOfRanking(rankingId)
         ranking = db.session.get(Rankings, rankingId)
         
-        # Add bonus information to each player for display in the interface
         for player in players:
             try:
                 player.bonus = PlayerBonuses.query.filter_by(playerId=player.id).first()
@@ -222,10 +216,8 @@ def trainer(rankingId):
                 log(3, "trainer", f"Error loading bonus for player {player.id}: {e}")
                 player.bonus = None
         
-        # Get active matches for this ranking
         activeMatches = getActiveMatchesOfRanking(rankingId)
         
-        # Get all players for import functionality
         allPlayers = Players.query.all()
         
         log(1, "trainer", f"Successfully loaded trainer page for ranking {rankingId} with {len(players)} players and {len(activeMatches)} active matches")
@@ -302,12 +294,6 @@ def startListTrainer():
         flash("Started Ranking/Tournament", "success")
         return redirect('/')
     
-@app.route('/deleteLogs')
-def deleteLogs():
-    clearLogs()
-    flash("Cleared Logs", "success")
-    return redirect('/')
-
 @app.route('/trainer/end', methods=['POST'])
 @requiresTrainer
 def endListTrainer():
@@ -345,15 +331,12 @@ def settingsTrainer(rankingId):
         autoEndTime = request.form.get('autoEndTime')  # time input
         disableAutoEnd = request.form.get('disableAutoEnd')  # checkbox
         
-        # Update ranking settings based on parsed form data
         if rankingId:
             ranking = db.session.get(Rankings, rankingId)
             if ranking and (rankingSystem or autoEndDate or autoEndTime or disableAutoEnd):
-                # Handle ranking system
                 if rankingSystem:
                     ranking.sortedBy = rankingSystem
                 
-                # Handle auto-end date/time
                 if disableAutoEnd:
                     ranking.endsOn = None
                 elif autoEndDate and autoEndTime:
@@ -389,7 +372,6 @@ def settingsTrainer(rankingId):
         # Convert UTC times to local timezone for display
         currentRankingWithLocalTime = None
         if currentRanking and currentRanking.endsOn:
-            # Create a copy of the ranking object with local time. May find better way
             import copy
             currentRankingWithLocalTime = copy.copy(currentRanking)
             currentRankingWithLocalTime.endsOn = convert_utc_to_local(currentRanking.endsOn)
@@ -399,7 +381,7 @@ def settingsTrainer(rankingId):
         return render_template(
             'settingsTrainer.html',
             rankingId=rankingId,
-            currentRanking=currentRankingWithLocalTime  # Pass the version with local time
+            currentRanking=currentRankingWithLocalTime
         )
     except Exception as e:
         log(4, "settingsTrainer", f"Error loading ranking {rankingId}: {e}")
@@ -582,7 +564,6 @@ def player_add():
         logicOperator = request.form.get('logic_operator')
         limitRanking = request.form.get('limit_ranking')
         
-        # Create the new player
         newPlayer(name, rankingId, bonus, logicOperator, limitRanking)
         flash(f"Added new player '{name}' to ranking", "success")
         log(1, "player_add", f"Added new player {name} to ranking {rankingId}")
@@ -695,14 +676,12 @@ def player_edit():
         
         playerId = int(playerId)
         
-        # Get the player object
         player = db.session.get(Players, playerId)
         if not player:
             flash("Player not found", "error")
             log(3, "player_edit", f"Player with ID {playerId} not found")
             return redirect(f'/trainer/{rankingId}')
     
-        # Handle ranking update
         new_ranking = request.form.get('ranking')
         if new_ranking and new_ranking.strip():
             try:
@@ -842,7 +821,6 @@ def player_delete():
             
         playerId = int(playerId)
         
-        # Delete the player entirely
         deletePlayer(playerId)
         flash(f"Successfully deleted player {playerId}", "success")
         log(1, "player_delete", f"Deleted Player {playerId}")
@@ -862,7 +840,45 @@ if __name__ == '__main__':
     Creates test data if the database is empty to facilitate development and testing.
     """
     try:
-        with app.app_context():
+        with app.app_context(): #TODO make better setup
+
+            trainerEntry = Authentication.query.filter_by(name="trainer").first()
+            if not trainerEntry:
+                password = os.environ.get('trainerPassword')
+                while not password:
+                    print("Trainer password not Set!")
+                    print("Please enter a new secure password:")
+                    inputKey = input()
+                    if inputKey:
+                        password = inputKey
+                        set_key('.env', 'trainerPassword', password)
+                password = generate_password_hash(password)
+                trainerAuthenticationEntry = Authentication(
+                    name="trainer",
+                    passwordHash=password
+                )
+                db.session.add(trainerAuthenticationEntry)
+                db.session.commit()
+
+            viewerEntry = Authentication.query.filter_by(name="viewer").first()
+            if not viewerEntry:
+                password = os.environ.get('viewerPassword')
+                while not password:
+                    print("Viewer password not Set!")
+                    print("Please enter a new secure password:")
+                    inputKey = input()
+                    if inputKey:
+                        password = inputKey
+                        set_key('.env', 'viewerPassword', password)
+                password = generate_password_hash(password)
+                viewerAuthenticationEntry = Authentication(
+                    name="viewer",
+                    passwordHash=password
+                )
+                db.session.add(viewerAuthenticationEntry)
+                db.session.commit()
+
+
             # Define the path to the privacy file
             privacyFilePath = os.path.join(app.root_path, 'user_content', 'privacy.md')
         
@@ -929,22 +945,6 @@ if __name__ == '__main__':
                 
                 db.session.commit()
                 log(1, "startup", f"Created {ranking_entries_created} player ranking entries")
-
-            if Authentication.query.count() == 0:
-                viewerAuthentication = Authentication(
-                    name = 'viewer',
-                    passwordHash = generate_password_hash("viewerPassword2")
-                )
-
-                trainerAuthentication = Authentication(
-                    name = 'trainer',
-                    passwordHash = generate_password_hash("trainerPassword3")
-                )
-
-                db.session.add(viewerAuthentication)
-                db.session.add(trainerAuthentication)
-
-                db.session.commit()
 
             # Log startup completion within the application context
             log(1, "startup", "Database initialization completed successfully")

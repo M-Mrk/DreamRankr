@@ -573,13 +573,11 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <div class="me-auto">
-                    <!-- Changed: Simplified delete/remove button - only triggers choice modal -->
                     <button type="button" class="btn btn-outline-danger" id="deletePlayerBtn" 
                             data-bs-toggle="modal" 
                             data-bs-target="#deleteRemoveChoiceModal">
                         Delete/Remove Player
                     </button>
-                    <!-- Remove hidden forms that were causing conflicts -->
                 </div>
                 <button type="button" class="btn btn-primary" id="savePlayerBtn">Save Changes</button>
             </div>
@@ -611,7 +609,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
-<!-- Updated: Delete/Remove Choice Modal -->
+<!-- Delete/Remove Choice Modal -->
 <div class="modal fade" id="deleteRemoveChoiceModal" tabindex="-1" aria-labelledby="deleteRemoveChoiceModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">

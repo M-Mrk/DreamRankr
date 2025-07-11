@@ -1,7 +1,7 @@
 from functools import wraps
-from flask import Flask, redirect, session, url_for
+from flask import redirect, session, url_for
 from db import Authentication
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash
 import datetime
 from logger import log
 

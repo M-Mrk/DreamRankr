@@ -1046,7 +1046,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initializeFinishMatchModal();
   initializeActiveMatchesSettings();
   initializeEditPlayerModal();
-  initializeAddPlayerForm(); // Add this line
+  initializeAddPlayerForm();
   initializeAddPlayerOffcanvasUI();
   initializeDeleteRemovePlayerModal();
 
