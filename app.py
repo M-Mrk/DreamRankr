@@ -904,9 +904,9 @@ if __name__ == '__main__':
             if Players.query.count() == 0:
                 log(1, "startup", "Creating test players")
                 test_players = [
-                    Players(name="Alice", wins=12, losses=3, setsWon=25, setsLost=10, ranking=1, points=27),
-                    Players(name="Bob", wins=10, losses=4, setsWon=22, setsLost=11, ranking=2, points=24),
-                    Players(name="Charlie", wins=8, losses=6, setsWon=18, setsLost=15, ranking=3, points=20),
+                    Players(name="Alice", wins=12, losses=3, setsWon=25, setsLost=10),
+                    Players(name="Bob", wins=10, losses=4, setsWon=22, setsLost=11),
+                    Players(name="Charlie", wins=8, losses=6, setsWon=18, setsLost=15),
                 ]
                 for player in test_players:
                     db.session.add(player)
@@ -932,16 +932,31 @@ if __name__ == '__main__':
                 players = Players.query.all()
                 rankings = Rankings.query.all()
                 
+                # Test data: Alice (rank 1, 27 points), Bob (rank 2, 24 points), Charlie (rank 3, 20 points)
+                test_player_data = [
+                    {"name": "Alice", "ranking": 1, "points": 27},
+                    {"name": "Bob", "ranking": 2, "points": 24},
+                    {"name": "Charlie", "ranking": 3, "points": 20},
+                ]
+                
                 ranking_entries_created = 0
                 for ranking in rankings:
-                    for player in players:
+                    for i, player in enumerate(players):
+                        # Use test data if available, otherwise default values
+                        if i < len(test_player_data):
+                            player_rank = test_player_data[i]["ranking"]
+                            player_points = test_player_data[i]["points"]
+                        else:
+                            player_rank = i + 1
+                            player_points = max(0, 30 - (i * 5))
+                        
                         player_ranking = PlayerRankings(
                             playerId=player.id,
                             rankingId=ranking.id,
-                            ranking=player.ranking,
-                            lastRanking=player.ranking,
+                            ranking=player_rank,
+                            lastRanking=player_rank,
                             lastRankingChanged=datetime.now(timezone.utc),
-                            points=player.points
+                            points=player_points
                         )
                         db.session.add(player_ranking)
                         ranking_entries_created += 1
